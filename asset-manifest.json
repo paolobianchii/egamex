@@ -1,18 +1,18 @@
 {
   "files": {
     "main.css": "/egamesx/static/css/main.ae32b12e.css",
-    "main.js": "/egamesx/static/js/main.3a17510f.js",
+    "main.js": "/egamesx/static/js/main.4ae75f60.js",
     "static/js/488.7cf4af53.chunk.js": "/egamesx/static/js/488.7cf4af53.chunk.js",
     "static/media/collage.png": "/egamesx/static/media/collage.5e14e6619e8b4fa04836.png",
     "static/media/banner.png": "/egamesx/static/media/banner.cc28f17b9674dde28771.png",
     "static/media/fakeTorneo.jpg": "/egamesx/static/media/fakeTorneo.8375669b563d9ef903cc.jpg",
     "index.html": "/egamesx/index.html",
     "main.ae32b12e.css.map": "/egamesx/static/css/main.ae32b12e.css.map",
-    "main.3a17510f.js.map": "/egamesx/static/js/main.3a17510f.js.map",
+    "main.4ae75f60.js.map": "/egamesx/static/js/main.4ae75f60.js.map",
     "488.7cf4af53.chunk.js.map": "/egamesx/static/js/488.7cf4af53.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.ae32b12e.css",
-    "static/js/main.3a17510f.js"
+    "static/js/main.4ae75f60.js"
   ]
 }
