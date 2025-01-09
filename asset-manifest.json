@@ -1,18 +1,20 @@
 {
   "files": {
-    "main.css": "/static/css/main.ae32b12e.css",
-    "main.js": "/static/js/main.6209d5fa.js",
+    "main.css": "/static/css/main.b08f854f.css",
+    "main.js": "/static/js/main.bb05a358.js",
     "static/js/488.7cf4af53.chunk.js": "/static/js/488.7cf4af53.chunk.js",
-    "static/media/collage.png": "/static/media/collage.5e14e6619e8b4fa04836.png",
-    "static/media/banner.png": "/static/media/banner.cc28f17b9674dde28771.png",
-    "static/media/fakeTorneo.jpg": "/static/media/fakeTorneo.8375669b563d9ef903cc.jpg",
+    "static/media/banner1.png": "/static/media/banner1.b9e9a983b7ff11906222.png",
+    "static/media/torneo.png": "/static/media/torneo.33374242659296e9808b.png",
+    "static/media/gruppo.png": "/static/media/gruppo.f5003457f8b8dc47697d.png",
+    "static/media/callofduty.png": "/static/media/callofduty.c8f04e2ed4bbff2a5d23.png",
+    "static/media/footer.png": "/static/media/footer.d619b50c695535e27d82.png",
     "index.html": "/index.html",
-    "main.ae32b12e.css.map": "/static/css/main.ae32b12e.css.map",
-    "main.6209d5fa.js.map": "/static/js/main.6209d5fa.js.map",
+    "main.b08f854f.css.map": "/static/css/main.b08f854f.css.map",
+    "main.bb05a358.js.map": "/static/js/main.bb05a358.js.map",
     "488.7cf4af53.chunk.js.map": "/static/js/488.7cf4af53.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.ae32b12e.css",
-    "static/js/main.6209d5fa.js"
+    "static/css/main.b08f854f.css",
+    "static/js/main.bb05a358.js"
   ]
 }
