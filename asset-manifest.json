@@ -1,20 +1,20 @@
 {
   "files": {
-    "main.css": "/static/css/main.b08f854f.css",
-    "main.js": "/static/js/main.bb05a358.js",
-    "static/js/488.7cf4af53.chunk.js": "/static/js/488.7cf4af53.chunk.js",
-    "static/media/banner1.png": "/static/media/banner1.b9e9a983b7ff11906222.png",
-    "static/media/torneo.png": "/static/media/torneo.33374242659296e9808b.png",
-    "static/media/gruppo.png": "/static/media/gruppo.f5003457f8b8dc47697d.png",
-    "static/media/callofduty.png": "/static/media/callofduty.c8f04e2ed4bbff2a5d23.png",
-    "static/media/footer.png": "/static/media/footer.d619b50c695535e27d82.png",
-    "index.html": "/index.html",
-    "main.b08f854f.css.map": "/static/css/main.b08f854f.css.map",
-    "main.bb05a358.js.map": "/static/js/main.bb05a358.js.map",
-    "488.7cf4af53.chunk.js.map": "/static/js/488.7cf4af53.chunk.js.map"
+    "main.css": "/egamesx/static/css/main.b08f854f.css",
+    "main.js": "/egamesx/static/js/main.75336f3d.js",
+    "static/js/488.7cf4af53.chunk.js": "/egamesx/static/js/488.7cf4af53.chunk.js",
+    "static/media/banner1.png": "/egamesx/static/media/banner1.b9e9a983b7ff11906222.png",
+    "static/media/torneo.png": "/egamesx/static/media/torneo.33374242659296e9808b.png",
+    "static/media/gruppo.png": "/egamesx/static/media/gruppo.f5003457f8b8dc47697d.png",
+    "static/media/callofduty.png": "/egamesx/static/media/callofduty.c8f04e2ed4bbff2a5d23.png",
+    "static/media/footer.png": "/egamesx/static/media/footer.d619b50c695535e27d82.png",
+    "index.html": "/egamesx/index.html",
+    "main.b08f854f.css.map": "/egamesx/static/css/main.b08f854f.css.map",
+    "main.75336f3d.js.map": "/egamesx/static/js/main.75336f3d.js.map",
+    "488.7cf4af53.chunk.js.map": "/egamesx/static/js/488.7cf4af53.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.b08f854f.css",
-    "static/js/main.bb05a358.js"
+    "static/js/main.75336f3d.js"
   ]
 }
