@@ -1,19 +1,19 @@
 {
   "files": {
-    "main.css": "/egamesx/static/css/main.0bde5f36.css",
-    "main.js": "/egamesx/static/js/main.5fb8d0c8.js",
+    "main.css": "/egamesx/static/css/main.9889d75a.css",
+    "main.js": "/egamesx/static/js/main.e27c1004.js",
     "static/js/952.a3f49b4e.chunk.js": "/egamesx/static/js/952.a3f49b4e.chunk.js",
     "static/js/488.7cf4af53.chunk.js": "/egamesx/static/js/488.7cf4af53.chunk.js",
     "static/media/background.png": "/egamesx/static/media/background.112ade456c3620611a28.png",
     "static/media/logo2.png": "/egamesx/static/media/logo2.b858be7779a57e1a1cb9.png",
     "index.html": "/egamesx/index.html",
-    "main.0bde5f36.css.map": "/egamesx/static/css/main.0bde5f36.css.map",
-    "main.5fb8d0c8.js.map": "/egamesx/static/js/main.5fb8d0c8.js.map",
+    "main.9889d75a.css.map": "/egamesx/static/css/main.9889d75a.css.map",
+    "main.e27c1004.js.map": "/egamesx/static/js/main.e27c1004.js.map",
     "952.a3f49b4e.chunk.js.map": "/egamesx/static/js/952.a3f49b4e.chunk.js.map",
     "488.7cf4af53.chunk.js.map": "/egamesx/static/js/488.7cf4af53.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.0bde5f36.css",
-    "static/js/main.5fb8d0c8.js"
+    "static/css/main.9889d75a.css",
+    "static/js/main.e27c1004.js"
   ]
 }
