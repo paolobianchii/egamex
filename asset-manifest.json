@@ -1,17 +1,17 @@
 {
   "files": {
-    "main.css": "/egamex/static/css/main.c0cb18c9.css",
-    "main.js": "/egamex/static/js/main.2e242299.js",
+    "main.css": "/egamex/static/css/main.f9cc6cdc.css",
+    "main.js": "/egamex/static/js/main.316d7e87.js",
     "static/js/488.7cf4af53.chunk.js": "/egamex/static/js/488.7cf4af53.chunk.js",
     "static/media/background.png": "/egamex/static/media/background.112ade456c3620611a28.png",
     "static/media/logo2.png": "/egamex/static/media/logo2.b858be7779a57e1a1cb9.png",
     "index.html": "/egamex/index.html",
-    "main.c0cb18c9.css.map": "/egamex/static/css/main.c0cb18c9.css.map",
-    "main.2e242299.js.map": "/egamex/static/js/main.2e242299.js.map",
+    "main.f9cc6cdc.css.map": "/egamex/static/css/main.f9cc6cdc.css.map",
+    "main.316d7e87.js.map": "/egamex/static/js/main.316d7e87.js.map",
     "488.7cf4af53.chunk.js.map": "/egamex/static/js/488.7cf4af53.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.c0cb18c9.css",
-    "static/js/main.2e242299.js"
+    "static/css/main.f9cc6cdc.css",
+    "static/js/main.316d7e87.js"
   ]
 }
