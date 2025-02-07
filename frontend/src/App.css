@@ -1,0 +1,76 @@
+/* App.css */
+
+/* Impostazioni generali */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.site-layout {
+  min-height: 100vh;
+  background-color: #f0f2f5;  /* Colore di sfondo del layout */
+}
+
+.site-layout-background {
+  background: #fff;  /* Colore di sfondo per il contenuto */
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+
+.logo img {
+  transition: width 0.6s ease-in-out !important; /* La transizione si applica alla larghezza */
+  height: auto;
+  margin: 10px auto;
+  display: block;
+}
+
+/* Sidebar */
+.ant-layout-sider {
+  background-color: #001529;  /* Colore di sfondo per la sidebar */
+}
+
+/* Contenuto principale */
+.ant-layout-content {
+  margin: 24px 16px;
+  padding: 24px;
+  background: #fff;
+  min-height: 360px;
+  border-radius: 8px;
+}
+
+/* Gestione della navbar e layout responsivo */
+@media (max-width: 768px) {
+  .ant-layout-sider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+  }
+
+  .ant-layout-sider-collapsed {
+    position: absolute;
+    left: -80px; /* Rimpicciolimento della sidebar quando è collassata */
+  }
+
+  .site-layout .ant-layout-header {
+    padding: 0 10px;
+  }
+
+  .ant-layout-content {
+    margin: 0;
+    padding: 15px;
+  }
+
+  /* Modifica la navbar su schermi piccoli */
+  .navbar {
+    padding: 10px;
+  }
+}

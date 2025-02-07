@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+*{
+  font-family: 'DM Sans' !important;
+}
+@media (max-width: 767px) {
+  .username {
+    display: none; /* Nasconde il username sui dispositivi mobili */
+  }
+}
+
+/* Per schermi più grandi (tablet e desktop) mostra il username */
+@media (min-width: 768px) {
+  .username {
+    display: block; /* Mostra il username su tablet e desktop */
+    margin-left: 10px;
+  }
+}
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.avatar-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-direction: row !important;
+  position: absolute !important;
+  bottom: 80px !important;
+  left: 23px !important;
+}
+
+.username{
+  color: white !important;
+}

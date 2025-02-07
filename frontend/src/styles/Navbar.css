@@ -1,0 +1,27 @@
+.navbar {
+  background-color: #001529; /* Colore di sfondo della navbar */
+  width: 100%; /* Imposta la larghezza al 100% */
+  margin: 0; /* Rimuovi il margine per farla occupare tutta la larghezza dello schermo */
+  padding: 0 20px; /* Padding orizzontale per dare un po' di spazio ai lati */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-bar {
+  display: flex;
+  justify-content: center;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-right .ant-btn {
+  margin-left: 10px; /* Distanza tra il bottone di login e le notifiche */
+}
+
+.ant-input {
+  border-radius: 20px; /* Aggiungi angoli arrotondati alla barra di ricerca */
+}
