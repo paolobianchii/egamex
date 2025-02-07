@@ -27,7 +27,7 @@ const Login = () => {
 
   const handleLogin = async (values) => {
     try {
-      const response = await axios.post("http://localhost:5002/api/login", {
+      const response = await axios.post(`${apiUrl}/api/login`, {
         username: values.username,
         password: values.password,
       });
@@ -44,7 +44,7 @@ const Login = () => {
   const handleRegister = async (values) => {
     try {
       // Invia i dati di registrazione (email, password, username)
-      const response = await axios.post("http://localhost:5002/api/register", {
+      const response = await axios.post(`${apiUrl}/api/register`, {
         email: values.email,
         password: values.password,
         username: values.username,

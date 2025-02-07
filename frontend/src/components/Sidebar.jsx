@@ -168,11 +168,12 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
   return items;
 };
+const apiUrl = import.meta.env.VITE_API_URL;
 // Metodo di registrazione
 const handleRegister = async (values) => {
   try {
     // Assicurati che l'URL corrisponda al tuo backend
-    const response = await axios.post("http://localhost:5002/api/register", {
+    const response = await axios.post(`${apiUrl}/api/register`, {
       email: values.email,
       password: values.password,
       username: values.username,
@@ -192,7 +193,7 @@ const handleRegister = async (values) => {
     console.log("Dati inviati:", values); // Controlla i dati inviati
     try {
       // Invia email e password al backend
-      const response = await axios.post("http://localhost:5002/api/login", {
+      const response = await axios.post(`${apiUrl}/api/login`, {
         email: values.email, // Cambiato da username a email
         password: values.password,
       });
@@ -363,7 +364,7 @@ const handleRegister = async (values) => {
   
       // Fai una richiesta al backend per ottenere il ruolo dell'utente
       axios
-        .get("http://localhost:5002/api/getUserRole", {
+        .get(`${apiUrl}/api/getUserRole`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((response) => {

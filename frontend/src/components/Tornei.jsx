@@ -9,7 +9,7 @@ const Tornei = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get('http://localhost:5002/api/tournaments')
+    axios.get(`${apiUrl}/api/tournaments`)
       .then(response => {
         setTornei(response.data);
         setLoading(false);

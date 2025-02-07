@@ -7,5 +7,8 @@ export default defineConfig({
   build: {
     outDir: 'dist', // Cartella di build
   },
+  define: {
+    'process.env': process.env, // Se hai bisogno di accedere a process.env per altre variabili globali
+  },
   plugins: [react()],
 })

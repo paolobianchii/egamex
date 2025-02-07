@@ -10,10 +10,10 @@ const Home = () => {
   const [tornei, setTornei] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(""); // Stato per la ricerca
-
+  const apiUrl = import.meta.env.VITE_API_URL;
   useEffect(() => {
     axios
-      .get("http://localhost:5002/api/tournaments")
+      .get(`${apiUrl}/api/tournaments`)
       .then((response) => {
         console.log(response.data); // Verifica i dati ricevuti
         setTornei(response.data);
@@ -30,9 +30,7 @@ const Home = () => {
     setSearchTerm(value);
   }, 100); // Ritarda di 500ms prima di aggiornare lo stato
 
-  const filteredTornei = tornei.filter((torneo) =>
-    torneo.titolo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
 
   const currentDate = new Date();
   const fiveDaysAgo = new Date(currentDate);
@@ -41,16 +39,31 @@ const Home = () => {
   const inCorsoTornei = [];
   const passatiTornei = [];
 
+  // Assicurati che `tornei` sia un array prima di eseguire il ciclo
+if (Array.isArray(tornei)) {
   tornei.forEach((torneo) => {
+    // Assicurati che `torneo.data` sia una data valida
     const torneoDate = new Date(torneo.data);
+
+    // Verifica che la data del torneo sia valida
+    if (isNaN(torneoDate)) {
+      console.error(`Data del torneo non valida: ${torneo.data}`);
+      return; // Salta questo torneo se la data non è valida
+    }
+
+    // Confronta le date
     if (torneoDate > currentDate) {
-      futureTornei.push(torneo);
+      futureTornei.push(torneo); // Tornei futuri
     } else if (torneoDate >= fiveDaysAgo) {
-      inCorsoTornei.push(torneo);
+      inCorsoTornei.push(torneo); // Tornei in corso
     } else {
-      passatiTornei.push(torneo);
+      passatiTornei.push(torneo); // Tornei passati
     }
   });
+} else {
+  console.error('tornei non è un array valido:', tornei);
+}
+
 
   const getDaysRemaining = (torneoDate) => {
     const diffTime = torneoDate - currentDate;
