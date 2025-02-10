@@ -8,19 +8,20 @@ const jwt = require("jsonwebtoken"); // Aggiunto per la gestione dei JWT
 const { supabase } = require("./lib/supabase");
 const path = require('path');
 
-
 dotenv.config(); // Carica le variabili d'ambiente
-
 
 const supUrl = process.env.SUPABASE_URL; // Corretto
 const supAnonKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Aggiunto per coerenza
 
 const app = express();
 
-app.use(express.static(path.join(__dirname, 'dist')));
 
+// Indica la posizione di "dist" dentro "frontend"
+app.use(express.static(path.join( path.resolve(), 'frontend', 'dist')));
+
+// Per gestire tutte le richieste e farle puntare all'index.html di Vite
 app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join( path.resolve(), 'frontend', 'dist', 'index.html'));
 });
 
 app.use(bodyParser.json());
