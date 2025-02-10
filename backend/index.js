@@ -6,13 +6,22 @@ const usersRoutes = require("./routes/users");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken"); // Aggiunto per la gestione dei JWT
 const { supabase } = require("./lib/supabase");
+const path = require('path');
+
 
 dotenv.config(); // Carica le variabili d'ambiente
+
 
 const supUrl = process.env.SUPABASE_URL; // Corretto
 const supAnonKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Aggiunto per coerenza
 
 const app = express();
+
+app.use(express.static(path.join(__dirname, 'dist')));
+
+app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+});
 
 app.use(bodyParser.json());
 app.use(cors());

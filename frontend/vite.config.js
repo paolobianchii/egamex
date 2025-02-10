@@ -3,12 +3,12 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/egamex/', // Aggiungi il nome del repository GitHub qui
+  plugins: [react()],
+  base: '/egamex/',  // Usa percorsi relativi per evitare problemi su Netlify
   build: {
-    outDir: 'dist', // Cartella di build
+    outDir: 'dist',  // Assicura che Vite generi i file dentro dist/
   },
   define: {
     'process.env': process.env, // Se hai bisogno di accedere a process.env per altre variabili globali
   },
-  plugins: [react()],
 })
