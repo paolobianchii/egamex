@@ -3,19 +3,24 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const tournamentRoutes = require("./routes/tournaments");
 const usersRoutes = require("./routes/users");
-const bodyParser = require('body-parser');
-const jwt = require('jsonwebtoken'); // Aggiunto per la gestione dei JWT
+const bodyParser = require("body-parser");
+const jwt = require("jsonwebtoken"); // Aggiunto per la gestione dei JWT
 const { supabase } = require("./lib/supabase");
 
-dotenv.config();
+dotenv.config(); // Carica le variabili d'ambiente
+
+const supUrl = process.env.SUPABASE_URL; // Corretto
+const supAnonKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Aggiunto per coerenza
+
 const app = express();
 
 app.use(bodyParser.json());
 app.use(cors());
 app.use(express.json());
 
-console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
-console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY);
+console.log("SUPABASE_URL:", supUrl);
+console.log("SUPABASE_ANON_KEY:", supAnonKey);
+
 
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/users", usersRoutes); // Aggiunta la gestione delle rotte utenti

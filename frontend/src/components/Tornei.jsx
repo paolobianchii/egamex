@@ -7,6 +7,7 @@ const { Meta } = Card;
 const Tornei = () => {
   const [tornei, setTornei] = useState([]);
   const [loading, setLoading] = useState(true);
+  const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     axios.get(`${apiUrl}/api/tournaments`)
