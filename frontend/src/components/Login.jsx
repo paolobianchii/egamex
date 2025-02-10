@@ -8,7 +8,7 @@ const { TabPane } = Tabs;
 const Login = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('login'); // Stato per gestire il tab attivo
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const apiUrl = import.meta.env.VITE_BACKEND_URL;
 
   const showModal = () => {
     setIsModalVisible(true);

@@ -10,7 +10,7 @@ const Home = () => {
   const [tornei, setTornei] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(""); // Stato per la ricerca
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const apiUrl = import.meta.env.VITE_BACKEND_URL;
   useEffect(() => {
     axios
       .get(`${apiUrl}/api/tournaments`)
