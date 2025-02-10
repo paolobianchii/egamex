@@ -41,3 +41,77 @@
 .username{
   color: white !important;
 }
+
+
+
+
+/* Modale con sfondo scuro, bordi arrotondati e ombra */
+.custom-modal .ant-modal-content {
+  background-color: #2D2D2D;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Ombra per un effetto moderno */
+  color: white;
+}
+
+/* Stile per la maschera (sfondo scuro dietro la modale) */
+.custom-mask {
+  background-color: rgba(0, 0, 0, 0.7); /* Maschera scura sotto la modale */
+}
+
+/* Stile delle righe per i ranghi */
+.top1 {
+  background-color: #675b16; /* Oro per il primo posto */
+  color: #fff;
+  font-weight: bold;
+}
+
+.top2 {
+  background-color: #c0c0c0; /* Argento per il secondo posto */
+  color: #fff;
+  font-weight: bold;
+}
+
+.top3 {
+  background-color: #cd7f32; /* Bronzo per il terzo posto */
+  color: #fff;
+  font-weight: bold;
+}
+
+/* Stile della tabella */
+.ant-table {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #444; /* Bordo sottile per la tabella */
+}
+
+.ant-table-tbody > tr {
+  border-bottom: 1px solid #444; /* Linea separatrice tra le righe */
+}
+
+.ant-table-tbody > tr:last-child {
+  border-bottom: none; /* Rimuovi il bordo dall'ultima riga */
+}
+
+/* Stile per la testa della tabella */
+.ant-table-thead > tr > th {
+  background-color: #333; /* Sfondo scuro per l'intestazione */
+  color: #fff; /* Testo bianco per l'intestazione */
+  font-weight: bold;
+  font-size: 16px;
+  text-align: center;
+  padding: 12px;
+}
+
+/* Stile delle righe della tabella */
+.ant-table-tbody > tr > td {
+  padding: 16px 12px; /* Aumentato il padding per un aspetto più pulito */
+  text-align: center;
+}
+
+/* Stile per la descrizione vuota */
+.ant-empty-description {
+  color: #bbb; /* Grigio chiaro per il messaggio "Nessun partecipante registrato" */
+  font-size: 16px;
+  font-style: italic;
+}

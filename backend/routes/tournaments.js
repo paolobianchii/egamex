@@ -7,7 +7,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
     try {
         const { data, error } = await supabase.from("tornei").select("*");
-        console.log("Dati ricevuti:", data);  // Aggiungi questo log
+        //console.log("Dati ricevuti:", data);  // Aggiungi questo log
         if (error) {
             console.error("Errore nel recupero dei tornei:", error);
             return res.status(500).json({ error: "Errore nel recupero dei tornei" });

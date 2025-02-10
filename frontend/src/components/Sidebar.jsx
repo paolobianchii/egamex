@@ -198,7 +198,7 @@ const handleRegister = async (values) => {
         password: values.password,
       });
 
-      console.log("Risposta ricevuta:", response); // Controlla la risposta
+      //console.log("Risposta ricevuta:", response); // Controlla la risposta
 
       if (response.data.message) {
         // Se la risposta contiene il messaggio di successo
@@ -400,7 +400,7 @@ const handleRegister = async (values) => {
         <div className="logo">
           <img
             src={
-              collapsed ? "./public/whiteSmLogo.png" : "./public/whiteLogo.png"
+              collapsed ? "https://i.postimg.cc/763kSK59/white-Sm-Logo.png" : "https://i.postimg.cc/fLns3GRk/white-Logo.png"
             }
             alt="Logo"
             style={{

@@ -6,7 +6,7 @@ const usersRoutes = require("./routes/users");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken"); // Aggiunto per la gestione dei JWT
 const { supabase } = require("./lib/supabase");
-const path = require('path');
+const partecipazioniRoutes = require("./routes/partecipazioni"); // Aggiungi la tua route
 
 
 dotenv.config(); // Carica le variabili d'ambiente
@@ -28,7 +28,8 @@ console.log("SUPABASE_ANON_KEY:", supAnonKey);
 
 
 app.use("/api/tournaments", tournamentRoutes);
-app.use("/api/users", usersRoutes); // Aggiunta la gestione delle rotte utenti
+app.use("/api/partecipazioni", partecipazioniRoutes);
+app.use("/api/users", usersRoutes);
 
 // REGISTRAZIONE UTENTE
 app.post('/api/register', async (req, res) => {
@@ -128,6 +129,30 @@ app.post("/api/login", async (req, res) => {
     } catch (error) {
         console.error("Errore durante il login:", error);
         return res.status(500).json({ error: "Errore interno del server. Riprova più tardi." });
+    }
+});
+
+app.get("/api/partecipanti/:torneoId", async (req, res) => {
+    const { torneoId } = req.params;
+
+    try {
+        const { data, error } = await supabase
+  .from('partecipazioni')
+  .select('id, torneo_id, utente_id, created_at, punteggio, users(id, username, email)')
+  .eq('torneo_id', torneoId);
+
+
+        if (error) throw error;
+
+        // Rispondi con i dati dei partecipanti
+        res.json(data.map(p => ({
+            partecipazione_id: p.id, // id della partecipazione
+            utente_id: p.utente_id,   // id dell'utente
+            username: p.users.username,
+            email: p.users.email,
+        })));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Card, Button, Row, Col, Empty, Badge, Input } from "antd";
+import {
+  Card,
+  Button,
+  Row,
+  Col,
+  Empty,
+  Badge,
+  Input,
+  Modal,
+  Table,
+} from "antd";
 import axios from "axios";
 import { CalendarOutlined } from "@ant-design/icons"; // Importa l'icona
 import debounce from "lodash.debounce"; // Importa il debounce
+import { v4 as uuidv4, validate as uuidValidate } from "uuid";
 
 const { Meta } = Card;
 
@@ -11,16 +22,100 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(""); // Stato per la ricerca
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
+
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [partecipanti, setPartecipanti] = useState([]);
+  const [loadingPartecipanti, setLoadingPartecipanti] = useState(false);
+  const [torneoId, setTorneoId] = useState(null); // Definisci lo stato torneoId
+  const [error, setError] = useState(null);
+
+  const openModal = async (torneoId) => {
+    if (!torneoId) return;
+
+    setTorneoId(torneoId);
+    setLoadingPartecipanti(true);
+    setIsModalVisible(true);
+
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/partecipanti/${torneoId}`
+      );
+
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        setPartecipanti(response.data);
+      } else {
+        setPartecipanti([]);
+      }
+    } catch (error) {
+      console.error("Errore nel recupero delle partecipazioni:", error);
+    } finally {
+      setLoadingPartecipanti(false);
+    }
+  };
+
+  const columns = [
+    /*
+    {
+      title: "ID Partecipazione",
+      dataIndex: "partecipazione_id",
+      key: "partecipazione_id",
+      width: 150,
+    },
+    {
+      title: "ID Utente",
+      dataIndex: "utente_id",
+      key: "utente_id",
+      width: 150,
+    },
+    {
+      title: "Torneo ID",
+      dataIndex: "torneo_id",
+      key: "torneo_id",
+      render: (text) => text || "N/A", // Rendi più robusto se manca il valore
+    },
+    */
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+      render: (text) => text || "N/A",
+    },
+    {
+      title: "Username",
+      dataIndex: "username",
+      key: "username",
+      render: (text) => text || "N/A",
+    },
+    {
+      title: "Punteggio",
+      dataIndex: "punteggio",
+      key: "punteggio",
+      render: (punteggio) => punteggio || "0",
+    },
+    
+  ];
+
+  useEffect(() => {
+    if (!partecipanti || partecipanti.length === 0) {
+      console.log("⚠️ Nessun partecipante trovato o dati non disponibili.");
+    } else {
+      console.log(
+        `✅ Partecipanti trovati (${partecipanti.length}):`,
+        partecipanti
+      );
+    }
+  }, [partecipanti]);
+
   useEffect(() => {
     axios
       .get(`${apiUrl}/api/tournaments`)
       .then((response) => {
-        console.log(response.data); // Verifica i dati ricevuti
+        //console.log("Risposta API tornei:", response.data); // Aggiungi questo log per verificare
         setTornei(response.data);
         setLoading(false);
       })
       .catch((error) => {
-        console.error("C'è stato un errore nel recupero dei tornei:", error);
+        console.error("Errore nel recupero dei tornei:", error);
         setLoading(false);
       });
   }, []);
@@ -30,8 +125,6 @@ const Home = () => {
     setSearchTerm(value);
   }, 100); // Ritarda di 500ms prima di aggiornare lo stato
 
-
-
   const currentDate = new Date();
   const fiveDaysAgo = new Date(currentDate);
   fiveDaysAgo.setDate(currentDate.getDate() - 5);
@@ -40,46 +133,49 @@ const Home = () => {
   const passatiTornei = [];
 
   // Assicurati che `tornei` sia un array prima di eseguire il ciclo
-if (Array.isArray(tornei)) {
-  tornei.forEach((torneo) => {
-    // Assicurati che `torneo.data` sia una data valida
-    const torneoDate = new Date(torneo.data);
+  if (Array.isArray(tornei)) {
+    tornei.forEach((torneo) => {
+      // Assicurati che `torneo.data` sia una data valida
+      const torneoDate = new Date(torneo.data);
 
-    // Verifica che la data del torneo sia valida
-    if (isNaN(torneoDate)) {
-      console.error(`Data del torneo non valida: ${torneo.data}`);
-      return; // Salta questo torneo se la data non è valida
-    }
+      // Verifica che la data del torneo sia valida
+      if (isNaN(torneoDate)) {
+        console.error(`Data del torneo non valida: ${torneo.data}`);
+        return; // Salta questo torneo se la data non è valida
+      }
 
-    // Confronta le date
-    if (torneoDate > currentDate) {
-      futureTornei.push(torneo); // Tornei futuri
-    } else if (torneoDate >= fiveDaysAgo) {
-      inCorsoTornei.push(torneo); // Tornei in corso
-    } else {
-      passatiTornei.push(torneo); // Tornei passati
-    }
-  });
-} else {
-  console.error('tornei non è un array valido:', tornei);
-}
-
+      // Confronta le date
+      if (torneoDate > currentDate) {
+        futureTornei.push(torneo); // Tornei futuri
+      } else if (torneoDate >= fiveDaysAgo) {
+        inCorsoTornei.push(torneo); // Tornei in corso
+      } else {
+        passatiTornei.push(torneo); // Tornei passati
+      }
+    });
+  } else {
+    console.error("tornei non è un array valido:", tornei);
+  }
 
   const getDaysRemaining = (torneoDate) => {
     const diffTime = torneoDate - currentDate;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // Usa Math.floor per evitare il problema del giorno parziale
     return diffDays;
   };
 
   const getTimeRemaining = (torneoDate) => {
-    const endOfDay = new Date(torneoDate);
-    endOfDay.setHours(23, 59, 59, 999); // Imposta l'ora alla fine della giornata
+    // Calcola la data di scadenza (5 giorni dopo la data del torneo)
+    const expirationDate = new Date(torneoDate);
+    expirationDate.setDate(torneoDate.getDate() + 5); // Aggiungi 5 giorni
 
-    const diffTime = endOfDay - currentDate;
-    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-    const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+    const diffTime = expirationDate - currentDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // Giorni
+    const diffHours = Math.floor(
+      (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    ); // Ore
+    const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60)); // Minuti
 
-    return `${diffHours}h ${diffMinutes}m`;
+    return `${diffDays} giorni ${diffHours}h ${diffMinutes}m`;
   };
 
   return (
@@ -105,7 +201,7 @@ if (Array.isArray(tornei)) {
           Home
         </h1>
         {/* Barra di ricerca visibile solo su desktop */}
-        <div style={{ display:"none", marginBottom: "20px" }}>
+        <div style={{ display: "none", marginBottom: "20px" }}>
           <Input
             placeholder="Cerca tornei"
             value={searchTerm}
@@ -121,6 +217,45 @@ if (Array.isArray(tornei)) {
         </div>
 
         <Row gutter={16} style={{ marginBottom: "40px" }}>
+
+<Modal
+  title={<span className="fs-4 fw-bold text-white">Classifica Torneo</span>} // Titolo con Bootstrap
+  open={isModalVisible}
+  onCancel={() => setIsModalVisible(false)}
+  footer={null}
+  width={800}
+  destroyOnClose
+  className="custom-modal" // Applichiamo una classe personalizzata alla modale
+  maskClassName="custom-mask" // Applichiamo una classe personalizzata alla maschera (sfondo scuro sotto la modale)
+>
+  <Table
+    dataSource={partecipanti}
+    columns={columns}
+    rowKey="partecipazione_id"
+    loading={loadingPartecipanti}
+    scroll={{ y: 400 }}
+    locale={{
+      emptyText: (
+        <Empty description={<span style={{ color: '#ccc' }}>Nessun partecipante registrato</span>} />
+      ),
+    }}
+    rowClassName={(record, index) => {
+      // Differenzia i ranghi con sfondi diversi per i top 3
+      if (index === 0) return 'top1'; // Primo posto
+      if (index === 1) return 'top2'; // Secondo posto
+      if (index === 2) return 'top3'; // Terzo posto
+      return ''; // Altri posti
+    }}
+    style={{
+      backgroundColor: '#282828', // Sfondo della tabella
+      color: 'white',
+    }}
+    pagination={false} // Rimuovi la paginazione per una visualizzazione più semplice
+  />
+</Modal>
+
+
+
           {/* Tornei in corso */}
           <Col span={24} md={12}>
             <div
@@ -132,7 +267,7 @@ if (Array.isArray(tornei)) {
                 border: "0.8px solid #493473",
               }}
             >
-              <h2
+              <h4
                 style={{
                   color: "white",
                   textAlign: "left",
@@ -143,7 +278,7 @@ if (Array.isArray(tornei)) {
                 }}
               >
                 Tornei in corso ({inCorsoTornei.length})
-              </h2>
+              </h4>
               <Row gutter={16}>
                 {loading ? (
                   <p>Loading tornei...</p>
@@ -172,6 +307,7 @@ if (Array.isArray(tornei)) {
                             padding: "5px 10px",
                             borderRadius: "8px",
                             fontWeight: "bold",
+                            fontSize: 12,
                           }}
                         >
                           {`Scade tra ${getTimeRemaining(
@@ -192,7 +328,7 @@ if (Array.isArray(tornei)) {
                           }
                           description={
                             <Badge
-                              count={`Modalità: ${torneo.modalita}`}
+                              count={`${torneo.modalita}`}
                               style={{
                                 backgroundColor: "#282828", // Colore del badge (puoi cambiarlo)
                                 color: "white", // Colore del testo
@@ -202,29 +338,44 @@ if (Array.isArray(tornei)) {
                                 justifyContent: "center",
                                 alignItems: "center",
                                 borderRadius: "6px", // Per rendere gli angoli arrotondati
-                                fontSize: "14px", // Regola la dimensione del font
+                                fontSize: "12px", // Regola la dimensione del font
                               }}
                             />
                           }
                         />
-                        <p style={{ marginTop: 15 }}>
-                          <CalendarOutlined style={{ fontSize: 18 }} />{" "}
-                          {new Date(torneo.data).toLocaleDateString()}
-                        </p>
+                        <div style={{ marginTop: 15, marginBottom: 15 }}>
+                          <span style={{ fontSize: 11, fontWeight: "" }}>
+                            Creato:{" "}
+                          </span>
+                          <span style={{ fontSize: 11 }}>
+                            {new Date(torneo.data).toLocaleString("it-IT", {
+                              weekday: "long", // Giorno della settimana
+                              year: "numeric", // Anno
+                              month: "long", // Mese
+                              day: "numeric", // Giorno
+                              hour: "2-digit", // Ora (due cifre)
+                            })}
+                          </span>
+                        </div>
 
                         <Button
+                          style={{ width: "100%" }}
                           type="primary"
+                          onClick={() => openModal(torneo.id)}
                           disabled={
-                            new Date(torneo.data).toLocaleDateString() !==
-                            currentDate.toLocaleDateString()
+                            new Date(torneo.data).getTime() <=
+                            currentDate.getTime() - 5 * 24 * 60 * 60 * 1000 // 5 giorni fa
                           }
                         >
-                          {new Date(torneo.data).toLocaleDateString() ===
-                          currentDate.toLocaleDateString()
-                            ? `Partecipa`
-                            : `Mancano ${getDaysRemaining(
+                          {new Date(torneo.data).getTime() <=
+                          currentDate.getTime() - 5 * 24 * 60 * 60 * 1000
+                            ? "Scaduto"
+                            : new Date(torneo.data).getTime() >
+                              currentDate.getTime()
+                            ? `Partecipa tra ${getDaysRemaining(
                                 new Date(torneo.data)
-                              )} giorni`}
+                              )} giorni` // Torneo futuro
+                            : `Partecipa`}
                         </Button>
                       </Card>
                     </Col>
@@ -260,7 +411,7 @@ if (Array.isArray(tornei)) {
                 border: "0.8px solid #493473",
               }}
             >
-              <h2
+              <h4
                 style={{
                   color: "white",
                   textAlign: "left",
@@ -271,7 +422,7 @@ if (Array.isArray(tornei)) {
                 }}
               >
                 Tornei a breve ({futureTornei.length})
-              </h2>
+              </h4>
               <Row gutter={16}>
                 {futureTornei.length > 0 ? (
                   futureTornei.map((torneo) => (
