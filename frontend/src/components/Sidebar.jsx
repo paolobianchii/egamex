@@ -21,6 +21,10 @@ import {
   UserOutlined,
   LockOutlined,
   GithubOutlined,
+  InstagramOutlined,
+  TwitterOutlined,
+  XOutlined,
+  DiscordOutlined,
 } from "@ant-design/icons";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { useNavigate } from "react-router-dom"; // Usa useNavigate invece di useHistory
@@ -101,31 +105,31 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
- // Funzione per determinare gli items del menu
- const getMenuItems = () => {
-  const items = [
-    {
-      key: "1",
-      icon: <HomeOutlined style={{ fontSize: 20 }} />,
-      label: "Home",
-      onClick: () => handleNavigation("/"),
-      style:{
-        fontSize:17,
-        fontWeight:"500"
-      }
+  // Funzione per determinare gli items del menu
+  const getMenuItems = () => {
+    const items = [
+      {
+        key: "1",
+        icon: <HomeOutlined style={{ fontSize: 20 }} />,
+        label: "Home",
+        onClick: () => handleNavigation("/"),
+        style: {
+          fontSize: 17,
+          fontWeight: "500",
+        },
+      },
+      /*
+      {
+        key: "2",
+        icon: <TrophyOutlined style={{ fontSize: 20 }} />,
+        label: "Tornei",
+        onClick: () => handleNavigation("tornei"),
+        style: {
+          fontSize: 17,
+          fontWeight: "500",
+        },
+      },
       
-    },
-    {
-      key: "2",
-      icon: <TrophyOutlined style={{ fontSize: 20 }} />,
-      label: "Tornei",
-      onClick: () => handleNavigation("tornei"),
-      style:{
-        fontSize:17,
-        fontWeight:"500"
-      }
-    },
-    /*
     {
       key: "3",
       icon: <ShoppingCartOutlined style={{ fontSize: 20 }} />,
@@ -136,58 +140,58 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         fontWeight:"500"
       }
     },
-    */
-    {
-      key: "4",
-      icon: <LoginOutlined style={{ fontSize: 20 }} />,
-      label: isLoggedIn ? null : "Login",
-      onClick: isLoggedIn ? handleLogout : handleLoginLogout,
-      style:{
-        fontSize:17,
-        fontWeight:"500"
-      }
-    },
-  ];
-
-  if (isAdmin) {
-    items.push(
+    
       {
-        key: "5",
-        icon: <UserOutlined style={{ fontSize: 20 }} />,
-        label: "Gestione Utenti",
-        onClick: () => handleNavigation("gestione-utenti"),
+        key: "4",
+        icon: <LoginOutlined style={{ fontSize: 20 }} />,
+        label: isLoggedIn ? null : "Login",
+        onClick: isLoggedIn ? handleLogout : handleLoginLogout,
+        style: {
+          fontSize: 17,
+          fontWeight: "500",
+        },
       },
-      {
-        key: "6",
-        icon: <TrophyOutlined style={{ fontSize: 20 }} />,
-        label: "Gestione Tornei",
-        onClick: () => handleNavigation("gestione-tornei"),
-      }
-    );
-  }
+      */
+    ];
 
-  return items;
-};
-const apiUrl = import.meta.env.VITE_BACKEND_URL;
-// Metodo di registrazione
-const handleRegister = async (values) => {
-  try {
-    // Assicurati che l'URL corrisponda al tuo backend
-    const response = await axios.post(`${apiUrl}/api/register`, {
-      email: values.email,
-      password: values.password,
-      username: values.username,
-    });
+    if (isAdmin) {
+      items.push(
+        {
+          key: "5",
+          icon: <UserOutlined style={{ fontSize: 20 }} />,
+          label: "Gestione Utenti",
+          onClick: () => handleNavigation("gestione-utenti"),
+        },
+        {
+          key: "6",
+          icon: <TrophyOutlined style={{ fontSize: 20 }} />,
+          label: "Gestione Tornei",
+          onClick: () => handleNavigation("gestione-tornei"),
+        }
+      );
+    }
 
-    message.success(response.data.message); // Mostra messaggio di successo
-    setIsModalVisible(false); // Chiudi la modale
-  } catch (error) {
-    message.error(
-      error.response?.data?.error || "Errore nella registrazione."
-    );
-  }
-};
+    return items;
+  };
+  const apiUrl = import.meta.env.VITE_BACKEND_URL;
+  // Metodo di registrazione
+  const handleRegister = async (values) => {
+    try {
+      // Assicurati che l'URL corrisponda al tuo backend
+      const response = await axios.post(`${apiUrl}/api/register`, {
+        email: values.email,
+        password: values.password,
+        username: values.username,
+      });
 
+      message.success(response.data.message); // Mostra messaggio di successo
+      setIsModalVisible(false); // Chiudi la modale
+    } catch (error) {
+      message.error(
+        error.response?.data?.error || "Errore nella registrazione."
+      );
+    }
+  };
 
   const handleLogin = async (values) => {
     console.log("Dati inviati:", values); // Controlla i dati inviati
@@ -361,7 +365,7 @@ const handleRegister = async (values) => {
       // Aggiungi il recupero del nome utente dal localStorage
       const savedUsername = localStorage.getItem("username");
       setUsername(savedUsername);
-  
+
       // Fai una richiesta al backend per ottenere il ruolo dell'utente
       axios
         .get(`${apiUrl}/api/getUserRole`, {
@@ -377,18 +381,17 @@ const handleRegister = async (values) => {
         });
     }
   }, []);
-  
 
   return (
     <>
       <Sider
         style={{
           position: "fixed", // Sidebar fissa
-          top: 0,
+          top: 60,
           left: 0,
           bottom: 0,
           zIndex: 10, // Mantieni la sidebar sopra altri contenuti
-          backgroundColor:"#0F0E17"
+          backgroundColor: "#0F0E17",
         }}
         width={250}
         collapsible
@@ -397,6 +400,7 @@ const handleRegister = async (values) => {
         collapsedWidth={collapsed ? 80 : 100}
         trigger={isMobile ? null : undefined} // Blocca l'apertura della sidebar su dispositivi mobili
       >
+        {/*
         <div className="logo">
           <img
             src={
@@ -412,6 +416,7 @@ const handleRegister = async (values) => {
             }}
           />
         </div>
+        */}
 
         <Menu
           theme="dark"
@@ -421,14 +426,14 @@ const handleRegister = async (values) => {
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "20px", // Spazio uniforme tra gli elementi
+            gap: "15px", // Spazio uniforme tra gli elementi
             borderRight: 0,
-            backgroundColor:"#0F0E17"
+            backgroundColor: "#0F0E17",
+            padding:5
           }}
         />
         {isLoggedIn && (
           <div style={{ marginTop: "auto" }}>
-            {" "}
             {/* Questo posiziona il dropdown in fondo */}
             {/* Posiziona il dropdown in fondo */}
             <Dropdown
@@ -462,6 +467,48 @@ const handleRegister = async (values) => {
             </Dropdown>
           </div>
         )}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 70,
+            left: 0,
+            right: 0,
+            width: "100%",
+            textAlign: "center",
+            padding: "20px 0",
+            display: "flex",
+            flexDirection: collapsed ? "column" : "row",
+            alignItems: "center",
+            justifyContent:"center",
+            gap: "40px",
+          }}
+        >
+          <a
+            href="https://discord.com/invite/xtZFtMKZez/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "white", fontSize: "20px" }}
+          >
+            <DiscordOutlined />
+          </a>
+          <a
+            href="https://x.com/i/flow/login?redirect_after_login=%2FeGameX_Official%2F"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "white", fontSize: "20px" }}
+          >
+            <XOutlined style={{color:"#fff"}} />
+          </a>
+          <a
+            href="https://www.instagram.com/egamex.eu/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "white", fontSize: "20px" }}
+          >
+            <InstagramOutlined />
+          </a>
+        </div>
+
         <Modal
           title="Accedi o Registrati"
           visible={isModalVisible}

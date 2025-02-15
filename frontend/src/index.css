@@ -43,6 +43,13 @@
 }
 
 
+.breadcrumb-item {
+  color: #000 !important; /* Colore del testo dell'elemento */
+}
+
+.breadcrumb-icon {
+  color: #fff !important; /* Colore dell'icona */
+}
 
 
 /* Modale con sfondo scuro, bordi arrotondati e ombra */

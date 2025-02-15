@@ -13,7 +13,9 @@ import {
 import axios from "axios";
 import { CalendarOutlined } from "@ant-design/icons"; // Importa l'icona
 import debounce from "lodash.debounce"; // Importa il debounce
-import { v4 as uuidv4, validate as uuidValidate } from "uuid";
+import { Breadcrumb } from "antd";
+import { HomeOutlined } from "@ant-design/icons";
+import Footer from "./Footer";
 
 const { Meta } = Card;
 
@@ -92,7 +94,6 @@ const Home = () => {
       key: "punteggio",
       render: (punteggio) => punteggio || "0",
     },
-    
   ];
 
   useEffect(() => {
@@ -193,13 +194,10 @@ const Home = () => {
       <div
         style={{
           backgroundColor: "rgba(0, 0, 0, 0.5)",
-          padding: "50px 20px",
+          padding: "10px 10px",
           minHeight: "100vh",
         }}
       >
-        <h1 style={{ fontSize: 32, color: "white", fontWeight: "800" }}>
-          Home
-        </h1>
         {/* Barra di ricerca visibile solo su desktop */}
         <div style={{ display: "none", marginBottom: "20px" }}>
           <Input
@@ -216,45 +214,51 @@ const Home = () => {
           />
         </div>
 
-        <Row gutter={16} style={{ marginBottom: "40px" }}>
 
-<Modal
-  title={<span className="fs-4 fw-bold text-white">Classifica Torneo</span>} // Titolo con Bootstrap
-  open={isModalVisible}
-  onCancel={() => setIsModalVisible(false)}
-  footer={null}
-  width={800}
-  destroyOnClose
-  className="custom-modal" // Applichiamo una classe personalizzata alla modale
-  maskClassName="custom-mask" // Applichiamo una classe personalizzata alla maschera (sfondo scuro sotto la modale)
->
-  <Table
-    dataSource={partecipanti}
-    columns={columns}
-    rowKey="partecipazione_id"
-    loading={loadingPartecipanti}
-    scroll={{ y: 400 }}
-    locale={{
-      emptyText: (
-        <Empty description={<span style={{ color: '#ccc' }}>Nessun partecipante registrato</span>} />
-      ),
-    }}
-    rowClassName={(record, index) => {
-      // Differenzia i ranghi con sfondi diversi per i top 3
-      if (index === 0) return 'top1'; // Primo posto
-      if (index === 1) return 'top2'; // Secondo posto
-      if (index === 2) return 'top3'; // Terzo posto
-      return ''; // Altri posti
-    }}
-    style={{
-      backgroundColor: '#282828', // Sfondo della tabella
-      color: 'white',
-    }}
-    pagination={false} // Rimuovi la paginazione per una visualizzazione più semplice
-  />
-</Modal>
-
-
+        <Row gutter={16} style={{ marginBottom: "40px", marginTop: 70 }}>
+          <Modal
+            title={
+              <span className="fs-4 fw-bold text-white">Classifica Torneo</span>
+            } // Titolo con Bootstrap
+            open={isModalVisible}
+            onCancel={() => setIsModalVisible(false)}
+            footer={null}
+            width={800}
+            destroyOnClose
+            className="custom-modal" // Applichiamo una classe personalizzata alla modale
+            maskClassName="custom-mask" // Applichiamo una classe personalizzata alla maschera (sfondo scuro sotto la modale)
+          >
+            <Table
+              dataSource={partecipanti}
+              columns={columns}
+              rowKey="partecipazione_id"
+              loading={loadingPartecipanti}
+              scroll={{ y: 400 }}
+              locale={{
+                emptyText: (
+                  <Empty
+                    description={
+                      <span style={{ color: "#ccc" }}>
+                        Nessun partecipante registrato
+                      </span>
+                    }
+                  />
+                ),
+              }}
+              rowClassName={(record, index) => {
+                // Differenzia i ranghi con sfondi diversi per i top 3
+                if (index === 0) return "top1"; // Primo posto
+                if (index === 1) return "top2"; // Secondo posto
+                if (index === 2) return "top3"; // Terzo posto
+                return ""; // Altri posti
+              }}
+              style={{
+                backgroundColor: "#282828", // Sfondo della tabella
+                color: "white",
+              }}
+              pagination={false} // Rimuovi la paginazione per una visualizzazione più semplice
+            />
+          </Modal>
 
           {/* Tornei in corso */}
           <Col span={24} md={12}>
@@ -490,7 +494,7 @@ const Home = () => {
           style={{
             color: "white",
             textAlign: "left",
-            marginBottom: "60px",
+            marginBottom: "20px",
             fontSize: 34,
             marginLeft: 5,
             fontWeight: "700",
@@ -498,11 +502,20 @@ const Home = () => {
         >
           Giochi
         </h2>
+        <div
+              style={{
+                background: "#0F0E17", // Colore di sfondo personalizzato
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)", // Ombra
+                padding: "20px", // Aggiungi padding per distanziare il contenuto dal bordo
+                borderRadius: "8px", // Per arrotondare gli angoli
+                border: "0.8px solid #493473",
+              }}
+            >
         <div style={{ overflow: "hidden", width: "100%" }}>
           <div
             style={{
               display: "flex",
-              animation: "scroll 18s linear infinite",
+              animation: "scroll 5s linear infinite",
             }}
           >
             <img
@@ -532,6 +545,8 @@ const Home = () => {
             />
           </div>
         </div>
+        </div>
+        <Footer />
       </div>
     </div>
   );

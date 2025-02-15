@@ -6,6 +6,7 @@ import Home from './components/Home';
 import Tornei from './components/Tornei';
 import Store from './components/Store';
 import Login from './components/Login'; 
+import Navbar from './components/Navbar';
 
 const { Content } = Layout;
 
@@ -13,11 +14,13 @@ const App = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
+    <>
     <Router>
       <Layout style={{ minHeight: '100vh' }}>
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      <Navbar/>
         <Layout style={{ marginLeft: collapsed ? '80px' : '250px' }}>
-          <Content style={{ padding: '0px' }}>
+          <Content >
             <Routes>
               <Route exact path="/" element={<Home />} />
               <Route path="/tornei" element={<Tornei />} />
@@ -28,6 +31,7 @@ const App = () => {
         </Layout>
       </Layout>
     </Router>
+    </>
   );
 };
 

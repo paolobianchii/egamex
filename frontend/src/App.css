@@ -24,6 +24,14 @@ body {
   }
 }
 
+.breadcrumb-item {
+  color: #000 !important; /* Colore del testo dell'elemento */
+}
+
+.breadcrumb-icon {
+  color: #fff !important; /* Colore dell'icona */
+}
+
 
 .logo img {
   transition: width 0.6s ease-in-out !important; /* La transizione si applica alla larghezza */
