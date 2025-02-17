@@ -338,7 +338,7 @@ const Tornei = () => {
                           textAlign: "center",
                         }}
                       >
-                        Non ci sono tornei in corso
+                        Non ci sono tornei in corsas
                       </div>
                     }
                   />

@@ -214,25 +214,6 @@ const Home = () => {
           />
         </div>
 
-        {loading && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 9999,
-          }}
-        >
-          <h2 style={{ color: "#fff", fontSize: "24px" }}>Caricamento tornei...</h2>
-        </div>
-      )}
-
         <Row gutter={16} style={{ marginBottom: "40px", marginTop: 70 }}>
           <Modal
             title={
@@ -282,11 +263,12 @@ const Home = () => {
           <Col span={24} md={12}>
             <div
               style={{
-                background: "#0F0E17", // Colore di sfondo personalizzato
+                background: "rgba(15, 14, 23, 0.1)", // Colore di sfondo quasi trasparente
+                backdropFilter: "blur(10px)", // Effetto di sfocatura dietro il div
                 boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)", // Ombra
                 padding: "20px", // Aggiungi padding per distanziare il contenuto dal bordo
                 borderRadius: "8px", // Per arrotondare gli angoli
-                border: "0.8px solid #493473",
+                border: "0.1px solid #493473", // Bordo
               }}
             >
               <h4
@@ -302,6 +284,26 @@ const Home = () => {
                 Tornei in corso ({inCorsoTornei.length})
               </h4>
               <Row gutter={16}>
+                {loading && (
+                  <div
+                    style={{
+                      position: "absolute", // Posizionamento assoluto rispetto al contenitore
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                      backgroundColor: "rgba(0, 0, 0, 0.7)",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      zIndex: 9999,
+                    }}
+                  >
+                    <h2 style={{ color: "#fff", fontSize: "24px" }}>
+                      Caricamento tornei...
+                    </h2>
+                  </div>
+                )}
                 {loading ? (
                   <p>Loading tornei...</p>
                 ) : inCorsoTornei.length > 0 ? (
@@ -403,20 +405,27 @@ const Home = () => {
                     </Col>
                   ))
                 ) : (
-                  <Empty
-                    description={
-                      <div
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: "bold",
-                          color: "#fff",
-                          textAlign: "center",
-                        }}
-                      >
-                        Non ci sono tornei in corso
-                      </div>
-                    }
-                  />
+                  <div
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      color: "#fff",
+                      textAlign: "center",
+                      background: "rgba(0, 0, 0, 0.6)", // Sfondo scuro semi-trasparente
+                      padding: "30px", // Spazio attorno al testo
+                      borderRadius: "10px", // Angoli arrotondati
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)", // Ombra leggera
+                      maxWidth: "400px", // Larghezza massima
+                      margin: "0 auto", // Centra il contenuto
+                      transition: "all 0.3s ease", // Transizione per animazioni
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginTop: 30,
+                    }}
+                  >
+                    Non ci sono tornei in corso
+                  </div>
                 )}
               </Row>
             </div>
@@ -424,13 +433,34 @@ const Home = () => {
 
           {/* Tornei a breve */}
           <Col span={24} md={12}>
+            {loading && (
+              <div
+                style={{
+                  position: "absolute", // Posizionamento assoluto rispetto al contenitore
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: "rgba(0, 0, 0, 0.7)",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  zIndex: 9999,
+                }}
+              >
+                <h2 style={{ color: "#fff", fontSize: "24px" }}>
+                  Caricamento tornei...
+                </h2>
+              </div>
+            )}
             <div
               style={{
-                background: "#0F0E17", // Colore di sfondo personalizzato
+                background: "rgba(15, 14, 23, 0.1)", // Colore di sfondo quasi trasparente
+                backdropFilter: "blur(10px)", // Effetto di sfocatura dietro il div
                 boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)", // Ombra
                 padding: "20px", // Aggiungi padding per distanziare il contenuto dal bordo
                 borderRadius: "8px", // Per arrotondare gli angoli
-                border: "0.8px solid #493473",
+                border: "0.1px solid #493473", // Bordo
               }}
             >
               <h4
@@ -443,7 +473,7 @@ const Home = () => {
                   fontWeight: "700",
                 }}
               >
-                Tornei a breve ({futureTornei.length})
+                A breve ({futureTornei.length})
               </h4>
               <Row gutter={16}>
                 {futureTornei.length > 0 ? (
@@ -473,15 +503,36 @@ const Home = () => {
                             </h3>
                           }
                           description={
-                            <p style={{ color: "#282828", fontSize: "16px" }}>
-                              Modalità: {torneo.modalita}
-                            </p>
+                            <Badge
+                              count={`${torneo.modalita}`}
+                              style={{
+                                backgroundColor: "#282828", // Colore del badge (puoi cambiarlo)
+                                color: "white", // Colore del testo
+                                padding: "12px", // Padding per fare un po' di spazio attorno al testo
+                                display: "flex",
+                                marginTop: -20,
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderRadius: "6px", // Per rendere gli angoli arrotondati
+                                fontSize: "12px", // Regola la dimensione del font
+                              }}
+                            />
                           }
                         />
-                        <p>
-                          <CalendarOutlined style={{ fontSize: 18 }} />{" "}
-                          {new Date(torneo.data).toLocaleDateString()}
-                        </p>
+                        <div style={{ marginTop: 15, marginBottom: 15 }}>
+                          <span style={{ fontSize: 11, fontWeight: "" }}>
+                            Creato:{" "}
+                          </span>
+                          <span style={{ fontSize: 11 }}>
+                            {new Date(torneo.data).toLocaleString("it-IT", {
+                              weekday: "long", // Giorno della settimana
+                              year: "numeric", // Anno
+                              month: "long", // Mese
+                              day: "numeric", // Giorno
+                              hour: "2-digit", // Ora (due cifre)
+                            })}
+                          </span>
+                        </div>
                         <Button
                           type="primary"
                           disabled={
@@ -500,7 +551,27 @@ const Home = () => {
                     </Col>
                   ))
                 ) : (
-                  <Empty description="Non ci sono tornei a breve" />
+                  <div
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      color: "#fff",
+                      textAlign: "center",
+                      background: "rgba(0, 0, 0, 0.6)", // Sfondo scuro semi-trasparente
+                      padding: "30px", // Spazio attorno al testo
+                      borderRadius: "10px", // Angoli arrotondati
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)", // Ombra leggera
+                      maxWidth: "400px", // Larghezza massima
+                      margin: "0 auto", // Centra il contenuto
+                      transition: "all 0.3s ease", // Transizione per animazioni
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginTop: 30,
+                    }}
+                  >
+                    Non ci sono tornei a breve
+                  </div>
                 )}
               </Row>
             </div>
@@ -521,49 +592,77 @@ const Home = () => {
           Giochi
         </h2>
         <div
+          style={{
+            background: "rgba(15, 14, 23, 0.1)",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
+            padding: "20px",
+            borderRadius: "8px",
+          }}
+        >
+          <div style={{ overflow: "hidden", width: "100%" }}>
+            <div
               style={{
-                background: "#0F0E17", // Colore di sfondo personalizzato
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)", // Ombra
-                padding: "20px", // Aggiungi padding per distanziare il contenuto dal bordo
-                borderRadius: "8px", // Per arrotondare gli angoli
-                border: "0.8px solid #493473",
+                display: "flex",
+                animation: "scroll 10s linear infinite",
               }}
             >
-        <div style={{ overflow: "hidden", width: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              animation: "scroll 5s linear infinite",
-            }}
-          >
-            <img
-              src="https://cdn2.steamgriddb.com/logo_thumb/db6d9e1beb13d90e4a67706afb39e4e8.png"
-              alt="Logo 1"
-              style={{ height: "50px", marginRight: "100px" }}
-            />
-            <img
-              src="https://www.stormforcegaming.co.uk/wp-content/uploads/2024/04/FortniteLogo-wht.png"
-              alt="Logo 2"
-              style={{ height: "50px", marginRight: "100px" }}
-            />
-            <img
-              src="https://fifauteam.com/images/fc25/logo/long-white.webp"
-              alt="Logo 3"
-              style={{ height: "50px", marginRight: "100px" }}
-            />
-            <img
-              src="https://logos-world.net/wp-content/uploads/2020/12/Dota-2-Logo.png"
-              alt="Logo 4"
-              style={{ height: "50px", marginRight: "100px" }}
-            />
-            <img
-              src="https://freepnglogo.com/images/all_img/1706273096valorant-logo-png-white.png"
-              alt="Logo 5"
-              style={{ height: "50px", marginRight: "100px" }}
-            />
+              <img
+                src="https://cdn2.steamgriddb.com/logo_thumb/db6d9e1beb13d90e4a67706afb39e4e8.png"
+                alt="Logo 1"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+              <img
+                src="https://www.stormforcegaming.co.uk/wp-content/uploads/2024/04/FortniteLogo-wht.png"
+                alt="Logo 2"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+              <img
+                src="https://fifauteam.com/images/fc25/logo/long-white.webp"
+                alt="Logo 3"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+              <img
+                src="https://logos-world.net/wp-content/uploads/2020/12/Dota-2-Logo.png"
+                alt="Logo 4"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+              <img
+                src="https://freepnglogo.com/images/all_img/1706273096valorant-logo-png-white.png"
+                alt="Logo 5"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+
+              {/* Duplica il contenuto per far sembrare che l'animazione sia infinita */}
+              <img
+                src="https://cdn2.steamgriddb.com/logo_thumb/db6d9e1beb13d90e4a67706afb39e4e8.png"
+                alt="Logo 1"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+              <img
+                src="https://www.stormforcegaming.co.uk/wp-content/uploads/2024/04/FortniteLogo-wht.png"
+                alt="Logo 2"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+              <img
+                src="https://fifauteam.com/images/fc25/logo/long-white.webp"
+                alt="Logo 3"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+              <img
+                src="https://logos-world.net/wp-content/uploads/2020/12/Dota-2-Logo.png"
+                alt="Logo 4"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+              <img
+                src="https://freepnglogo.com/images/all_img/1706273096valorant-logo-png-white.png"
+                alt="Logo 5"
+                style={{ height: "50px", marginRight: "100px" }}
+              />
+            </div>
           </div>
         </div>
-        </div>
+        
         <Footer />
       </div>
     </div>

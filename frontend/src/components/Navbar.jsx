@@ -12,7 +12,7 @@ import {
   message,
   Tabs,
 } from "antd";
-import { UserOutlined, LockOutlined } from "@ant-design/icons";
+import { UserOutlined, LockOutlined, UserAddOutlined, DiscordOutlined, LoginOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../styles/Navbar.css";
@@ -177,6 +177,7 @@ const Navbar = () => {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
+        backgroundColor: "#0F0E17",
         position: "fixed",
         top: 0,
         width: "100%",
@@ -185,12 +186,15 @@ const Navbar = () => {
       }}
     >
       <div className="navbar-left">
-        <img
-          src="https://i.postimg.cc/fLns3GRk/white-Logo.png"
-          alt="Logo"
-          style={{ height: "30px" }}
-        />
-      </div>
+  <a href="/" aria-label="Vai alla home">
+    <img
+      src="https://i.postimg.cc/fLns3GRk/white-Logo.png"
+      alt="Logo"
+      style={{ height: "30px" }}
+    />
+  </a>
+</div>
+
       <div
         className="navbar-right"
         style={{ display: "flex", alignItems: "center" }}
@@ -204,112 +208,206 @@ const Navbar = () => {
             />
           </Dropdown>
         ) : (
-          <Button type="primary" onClick={showLoginModal}>
-            Accedi
-          </Button>
+          <Button
+  type="primary"
+  onClick={showLoginModal}
+  style={{
+    backgroundColor: '#9b4dca', // Colore con trasparenza per effetto vetro
+    backdropFilter: 'blur(10px)', // Sfocatura dietro il bottone
+    borderRadius: '12px', // Angoli arrotondati
+    padding: '12px 24px', // Maggiore padding per un bottone più visibile
+    fontSize: '16px', // Aumenta la dimensione del testo
+    color: '#fff', // Colore del testo
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)', // Ombra sottile per dare profondità
+    fontWeight: 'bold', // Testo in grassetto
+    transition: 'all 0.3s ease', // Aggiungi transizione morbida
+    height:43
+  }}
+
+>
+  <UserOutlined/> Accedi
+</Button>
+
         )}
       </div>
 
       {/* Modale di login/registrazione */}
       <Modal
-        open={isModalVisible} // sostituito 'visible' con 'open'
-        onCancel={hideLoginModal}
-        footer={null}
-        width={400}
-        className="custom-modal" // classe personalizzata per ulteriori stilizzazioni
-      >
-        <div className="modal-header">
-          <h2 className="modal-title">Accedi o Registrati</h2>
-        </div>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          tabBarStyle={{
-            color: "white",
-            fontWeight: "bold",
-          }}
+  open={isModalVisible}
+  onCancel={hideLoginModal}
+  footer={null}
+  width={450}
+  className="custom-modal"
+>
+  <div className="modal-header" style={{ textAlign: 'left' }}>
+  <img
+      src="https://i.postimg.cc/fLns3GRk/white-Logo.png"
+      alt="Logo"
+      style={{ height: "40px", marginBottom:15 }}
+    />
+  </div>
+  <Tabs
+    activeKey={activeTab}
+    onChange={setActiveTab}
+    tabBarStyle={{
+      color: "#4A90E2",
+      fontWeight: "bold",
+      fontSize: "16px",
+      marginBottom: "20px",
+    }}
+  >
+    <TabPane tab="Accesso" key="login">
+      <Form name="login" onFinish={handleLogin} layout="vertical">
+        <Form.Item
+          name="email"
+          rules={[
+            {
+              required: true,
+              message: "Per favore inserisci la tua email!",
+            },
+          ]}
         >
-          <TabPane tab="Login" key="login">
-            <Form name="login" onFinish={handleLogin} layout="vertical">
-              <Form.Item
-                name="email"
-                rules={[
-                  {
-                    required: true,
-                    message: "Per favore inserisci la tua email!",
-                  },
-                ]}
-              >
-                <Input prefix={<UserOutlined />} placeholder="Email" />
-              </Form.Item>
-              <Form.Item
-                name="password"
-                rules={[
-                  {
-                    required: true,
-                    message: "Per favore inserisci la tua password!",
-                  },
-                ]}
-              >
-                <Input.Password
-                  prefix={<LockOutlined />}
-                  placeholder="Password"
-                />
-              </Form.Item>
-              <Form.Item>
-                <Button type="primary" block htmlType="submit">
-                  Login
-                </Button>
-              </Form.Item>
-            </Form>
-          </TabPane>
-          <TabPane tab="Registrazione" key="register">
-            <Form name="register" onFinish={handleRegister} layout="vertical">
-              <Form.Item
-                name="email"
-                rules={[
-                  {
-                    required: true,
-                    message: "Per favore inserisci la tua email!",
-                  },
-                ]}
-              >
-                <Input prefix={<UserOutlined />} placeholder="Email" />
-              </Form.Item>
-              <Form.Item
-                name="username"
-                rules={[
-                  {
-                    required: true,
-                    message: "Per favore inserisci il tuo username!",
-                  },
-                ]}
-              >
-                <Input prefix={<UserOutlined />} placeholder="Username" />
-              </Form.Item>
-              <Form.Item
-                name="password"
-                rules={[
-                  {
-                    required: true,
-                    message: "Per favore inserisci una password!",
-                  },
-                ]}
-              >
-                <Input.Password
-                  prefix={<LockOutlined />}
-                  placeholder="Password"
-                />
-              </Form.Item>
-              <Form.Item>
-                <Button type="primary" block htmlType="submit">
-                  Registrati
-                </Button>
-              </Form.Item>
-            </Form>
-          </TabPane>
-        </Tabs>
-      </Modal>
+          <Input
+            prefix={<UserOutlined />}
+            placeholder="Email"
+            size="large"
+            style={{ height: '45px', fontSize: '16px' }}
+          />
+        </Form.Item>
+        <Form.Item
+          name="password"
+          rules={[
+            {
+              required: true,
+              message: "Per favore inserisci la tua password!",
+            },
+          ]}
+        >
+          <Input.Password
+            prefix={<LockOutlined />}
+            placeholder="Password"
+            size="large"
+            style={{ height: '45px', fontSize: '16px' }}
+          />
+        </Form.Item>
+
+        <Form.Item>
+          <Button
+            type="primary"
+            block
+            htmlType="submit"
+            style={{
+              backgroundColor: 'rgb(15, 14, 23)',
+              borderRadius: '8px',
+              padding: '12px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              height:45
+            }}
+          >
+            <LoginOutlined /> Accedi
+          </Button>
+        </Form.Item>
+
+        {/* Divider Line */}
+        <hr style={{ border: '1px solid #ddd', margin: '20px 0' }} />
+
+        
+
+        {/* Discord login button */}
+        <Form.Item>
+          <Button
+            block
+            disabled
+            style={{
+              backgroundColor: '#7289DA',
+              borderRadius: '8px',
+              padding: '12px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#fff',
+              height:45
+            }}
+          >
+            <DiscordOutlined /> Accedi con Discord
+          </Button>
+        </Form.Item>
+      </Form>
+    </TabPane>
+
+    <TabPane tab="Registrazione" key="register">
+      <Form name="register" onFinish={handleRegister} layout="vertical">
+        <Form.Item
+          name="email"
+          rules={[
+            {
+              required: true,
+              message: "Per favore inserisci la tua email!",
+            },
+          ]}
+        >
+          <Input
+            prefix={<UserOutlined />}
+            placeholder="Email"
+            size="large"
+            style={{ height: '45px', fontSize: '16px' }}
+          />
+        </Form.Item>
+        <Form.Item
+          name="username"
+          rules={[
+            {
+              required: true,
+              message: "Per favore inserisci il tuo username!",
+            },
+          ]}
+        >
+          <Input
+            prefix={<UserOutlined />}
+            placeholder="Username"
+            size="large"
+            style={{ height: '45px', fontSize: '16px' }}
+          />
+        </Form.Item>
+        <Form.Item
+          name="password"
+          rules={[
+            {
+              required: true,
+              message: "Per favore inserisci una password!",
+            },
+          ]}
+        >
+          <Input.Password
+            prefix={<LockOutlined />}
+            placeholder="Password"
+            size="large"
+            style={{ height: '45px', fontSize: '16px' }}
+          />
+        </Form.Item>
+
+        <Form.Item>
+          <Button
+            type="primary"
+            block
+            htmlType="submit"
+            style={{
+              backgroundColor: 'rgb(15, 14, 23)',
+              borderRadius: '8px',
+              padding: '12px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              height:45
+            }}
+          >
+            <UserAddOutlined /> Registrati
+          </Button>
+        </Form.Item>
+      </Form>
+    </TabPane>
+  </Tabs>
+</Modal>
+
 
       {/* Sovrapposizione di "Accesso in corso" o "Logout in corso" */}
       {(isLoggingIn || isLoggingOut) && (

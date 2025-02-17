@@ -54,12 +54,27 @@
 
 /* Modale con sfondo scuro, bordi arrotondati e ombra */
 .custom-modal .ant-modal-content {
-  background-color: #2D2D2D;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Ombra per un effetto moderno */
-  color: white;
+  background: rgba(255, 255, 255, 0.2) !important; /* Maggiore trasparenza per il vetro */
+  backdrop-filter: blur(12px) !important; /* Aumento del blur per un effetto più "sfocato" */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; /* Ombra più morbida e più estesa */
+  padding: 30px !important; /* Maggiore spazio interno */
+  border-radius: 16px !important; /* Bordo più arrotondato */
+  border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Bordi più morbidi e trasparenti */
+  overflow: hidden !important; /* Nasconde eventuali bordi non arrotondati */
 }
+
+.custom-modal .ant-modal-header {
+  background: rgba(255, 255, 255, 0.1) !important; /* Header più trasparente */
+  backdrop-filter: blur(10px) !important; /* Aggiunta della sfocatura anche nell'header */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important; /* Linea di separazione tra header e contenuto */
+}
+
+.custom-modal .ant-modal-footer {
+  background: rgba(255, 255, 255, 0.1) !important; /* Footer con lo stesso effetto */
+  backdrop-filter: blur(10px) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
 
 /* Stile per la maschera (sfondo scuro dietro la modale) */
 .custom-mask {

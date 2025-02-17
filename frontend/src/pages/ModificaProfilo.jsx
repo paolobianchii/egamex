@@ -92,7 +92,7 @@ const ModificaProfilo = () => {
               <Input.Password disabled />
             </Form.Item>
             <Form.Item>
-              <Button type="primary" htmlType="submit" block>
+              <Button type="primary" htmlType="submit" block disabled>
                 Aggiorna Profilo
               </Button>
             </Form.Item>

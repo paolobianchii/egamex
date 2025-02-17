@@ -137,19 +137,27 @@ const AdminDashboard = () => {
         }}
       >
     <div style={{marginTop:50, padding:20}}>
-      <h2 className="mb-4">Gestione Utenti</h2>
+      <h2 className="mb-4" style={{color:"#fff"}}>Gestione Utenti</h2>
       <Table
         dataSource={users}
         columns={userColumns}
         rowKey="id"
         className="mb-8"
+        pagination={{
+            pageSize: 6, // Numero massimo di righe per pagina
+            showSizeChanger: false, // Disabilita la possibilità di cambiare il numero di righe per pagina
+          }}
       />
 
-      <h2 className="mb-4">Gestione Tornei</h2>
+      <h2 className="mb-4" style={{color:"#fff"}}>Gestione Tornei</h2>
       <Table
         dataSource={tournaments}
         columns={tournamentColumns}
         rowKey="id"
+        pagination={{
+            pageSize: 3, // Numero massimo di righe per pagina
+            showSizeChanger: false, // Disabilita la possibilità di cambiare il numero di righe per pagina
+          }}
       />
 
 <Modal

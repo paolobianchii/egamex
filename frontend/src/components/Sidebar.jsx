@@ -114,8 +114,18 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         label: "Home",
         onClick: () => handleNavigation("/"),
         style: {
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: "500",
+          color: "#FFFFFF", // Colore del testo
+          backgroundColor: "#B871F7", // Colore di sfondo trasparente
+          borderRadius: "8px", // Angoli arrotondati
+          transition: "background-color 0.3s", // Transizione per il colore di sfondo al passaggio del mouse
+        },
+        onMouseEnter: (e) => {
+          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.3)"; // Colore di sfondo al passaggio del mouse
+        },
+        onMouseLeave: (e) => {
+          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.1)"; // Colore di sfondo originale
         },
       },
       /*

@@ -6,7 +6,16 @@ const { Title, Text } = Typography;
 
 const Footer = () => {
   return (
-    <footer style={{ backgroundColor: '#0f0e17', color: '#ffffff', padding: '40px 0', marginTop:60 }}>
+    <footer style={{
+      background: "rgba(15, 14, 23, 0.1)", // Colore di sfondo quasi trasparente
+      backdropFilter: "blur(10px)", // Effetto di sfocatura dietro il div
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)", // Ombra
+      padding: "30px", // Aggiungi padding per distanziare il contenuto dal bordo
+      borderRadius: "8px", // Per arrotondare gli angoli
+      border: "0.1px solid #493473", // Bordo
+      marginTop:60,
+
+    }}>
       <div className="container" style={{ padding: '0 20px' }}>
         <Row gutter={[16, 24]} justify="space-between">
           
