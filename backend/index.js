@@ -95,8 +95,8 @@ app.post("/api/login", async (req, res) => {
         // Ottieni il ruolo dell'utente dalla tabella 'users' (non dalla tabella 'auth.users')
         const { data: userData, error: userError } = await supabase
             .from("users")  
-            .select("role")
-            .eq("email", email) // Cerca per email direttamente senza usare 'data.user.email'
+            .select("role, username") // Aggiungi 'role' e 'username' qui
+            .eq("email", email) // Cerca per email direttamente
             .limit(1)
             .maybeSingle();
 
@@ -111,18 +111,19 @@ app.post("/api/login", async (req, res) => {
 
         // Genera il token JWT
         const token = jwt.sign(
-            { userId: data.user.id, email: data.user.email, username: userData.username },
+            { userId: data.user.id, email: data.user.email, username: userData.username, role: userData.role }, // Includi il ruolo nel payload
             process.env.JWT_SECRET_KEY,
             { expiresIn: "1h" }
         );
 
-        // Rispondi con i dati dell'utente e il token
+        // Rispondi con i dati dell'utente, il ruolo e il token
         res.json({
             message: "Login effettuato con successo!",
             user: {
                 email: data.user.email,
                 id: data.user.id,
                 username: userData.username,
+                role: userData.role, // Aggiungi il ruolo nella risposta
             },
             token,
         });

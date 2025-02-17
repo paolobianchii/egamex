@@ -37,6 +37,34 @@
   align-items: center;
   z-index: 1001;
 }
+.custom-modal .ant-modal-content {
+  background: linear-gradient(to bottom right, #9b4dca, #6f2bb3); /* sfumatura viola */
+  color: white;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.custom-modal .ant-modal-header {
+  background-color: #6f2bb3; /* header viola scuro */
+  color: white;
+  font-weight: bold;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+:where(.css-dev-only-do-not-override-xex5fb).ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn{
+  color: #282828 !important;
+    text-shadow: 0 0 0.25px currentcolor;
+}
+
+.custom-modal .ant-tabs-tab {
+  color: white;
+  font-weight: bold;
+}
+
+.custom-modal .ant-tabs-tab-active {
+  color: #9b4dca; /* Colore per il tab attivo */
+}
 
 @media (max-width: 768px) {
   .navbar {

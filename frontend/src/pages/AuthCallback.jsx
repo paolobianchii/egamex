@@ -3,7 +3,7 @@ const saveUserToDatabase = async (user) => {
       {
         id: user.id,
         email: user.email,
-        username: user.user_metadata.full_name,
+        username: user.username,
         avatar_url: user.user_metadata.avatar_url,
         role: "user", // Default user
       }
