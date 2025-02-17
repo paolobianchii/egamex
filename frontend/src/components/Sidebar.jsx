@@ -432,41 +432,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             padding:5
           }}
         />
-        {isLoggedIn && (
-          <div style={{ marginTop: "auto" }}>
-            {/* Questo posiziona il dropdown in fondo */}
-            {/* Posiziona il dropdown in fondo */}
-            <Dropdown
-              trigger={["click"]} // Gestisce il trigger al click
-              dropdownRender={(menu) => (
-                <div>
-                  {menu}
-                  <Menu>
-                    <Menu.Item onClick={handleProfileUpdate}>
-                      Modifica Profilo
-                    </Menu.Item>
-                    <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
-                  </Menu>
-                </div>
-              )}
-            >
-              <div className="avatar-container">
-                <Avatar
-                  size="large"
-                  icon={<UserOutlined />} // Usa un'icona di utente di default se non c'è un'immagine
-                  style={{
-                    cursor: "pointer",
-                  }}
-                />
-                {/* Mostra username su schermi più grandi */}
-                <div className="username">{username} </div>
-                <ArrowDropDownIcon
-                  style={{ fontSize: 20, color: "white", marginLeft: 5 }}
-                />
-              </div>
-            </Dropdown>
-          </div>
-        )}
         <div
           style={{
             position: "absolute",

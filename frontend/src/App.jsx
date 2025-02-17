@@ -7,6 +7,8 @@ import Tornei from './components/Tornei';
 import Store from './components/Store';
 import Login from './components/Login'; 
 import Navbar from './components/Navbar';
+import ModificaProfiloPage from './pages/ModificaProfiloPage';
+import ModificaProfilo from './pages/ModificaProfilo';
 
 const { Content } = Layout;
 
@@ -25,6 +27,7 @@ const App = () => {
               <Route exact path="/" element={<Home />} />
               <Route path="/tornei" element={<Tornei />} />
               <Route path="/store" element={<Store />} />
+              <Route path="/edit" element={<ModificaProfilo />}/>
               <Route path="/login" element={<Login />} /> {/* Aggiungi la route per la pagina di login */}
             </Routes>
           </Content>

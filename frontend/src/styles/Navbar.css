@@ -25,3 +25,36 @@
 .ant-input {
   border-radius: 20px; /* Aggiungi angoli arrotondati alla barra di ricerca */
 }
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 10px; /* Riduci il padding */
+  }
+
+  .navbar-right {
+    display: flex;
+    align-items: center;
+  }
+
+  .navbar-right .ant-btn {
+    margin-left: 125px !important; /* Riduci lo spazio tra i pulsanti */
+    font-size: 14px; /* Riduci il font per adattarlo meglio */
+    padding: 16px 18px;
+  }
+
+  .navbar-left img {
+    height: 25px; /* Riduci la dimensione del logo per risparmiare spazio */
+  }
+}
