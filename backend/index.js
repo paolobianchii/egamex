@@ -13,7 +13,6 @@ const compression = require("compression");
 const NodeCache = require("node-cache");
 const roleRouter = require('./routes/users');
 const session = require("express-session");
-const MemoryStore = require('memorystore')(session); // Importa il MemoryStore
 
 
 dotenv.config(); // Carica le variabili d'ambiente
@@ -25,11 +24,8 @@ const supAnonKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Aggiunto per coeren
 const app = express();
 
 app.use(bodyParser.json());
-app.use(cors({
-    origin: 'http://localhost:5173', // il dominio del tuo frontend
-    methods: 'GET,POST',
-    allowedHeaders: 'Content-Type,Authorization',
-  }));app.use(express.json());
+app.use(cors());
+app.use(express.json());
 
 passport.use(
     new DiscordStrategy(
@@ -62,20 +58,10 @@ passport.use(
       }
     )
   );
-  const sessionStore = process.env.NODE_ENV === 'production' ? new MemoryStore() : null;
-
+  
   // Middleware per gestire la sessione utente
-  app.use(session({
-    secret: 'mySuperSecretKey_1234!$%#',
-    resave: false,
-    saveUninitialized: false,
-    store: sessionStore,  // Usa MemoryStore solo in sviluppo
-    cookie: {
-        secure: process.env.NODE_ENV === 'production', // Imposta cookie sicuro in produzione
-        httpOnly: true, // Protegge dai rischi di XSS
-        maxAge: 1000 * 60 * 60 * 24, // Imposta una durata di sessione (es. 1 giorno)
-    }
-}));  app.use(passport.initialize());
+  app.use(session({ secret: 'mySuperSecretKey_1234!$%#', resave: false, saveUninitialized: false }));
+  app.use(passport.initialize());
   app.use(passport.session());
   
   // Serializzazione e deserializzazione dell'utente
@@ -109,32 +95,19 @@ const cacheMiddleware = (req, res, next) => {
     };
     next();
 };
+app.get("/auth/discord/callback", 
+  passport.authenticate("discord", { failureRedirect: "/" }),
+  (req, res) => {
+    const user = req.user;
+    const token = jwt.sign({ id: user.id, username: user.username, email: user.email }, process.env.JWT_SECRET_KEY);
+    res.json({
+      message: "Login riuscito",
+      token: token,
+      user: user,
+    });
+  }
+);
 
-app.get('/auth/discord/callback', (req, res) => {
-    // Recupera il parametro state dalla query string
-    const receivedState = req.query.state;
-
-    // Verifica che il parametro state corrisponda a quello memorizzato nella sessione
-    if (receivedState !== req.session.state) {
-        return res.status(400).json({ error: 'Invalid state parameter' });
-    }
-
-    // Se il parametro state è valido, continua con il processo di autenticazione
-    passport.authenticate('discord', { failureRedirect: '/' }),
-    (req, res) => {
-        // Dopo il login riuscito, puoi generare un token JWT o gestire la sessione utente
-        const user = req.user;
-        const token = jwt.sign({ id: user.id, username: user.username, email: user.email }, 'mySuperSecretJWTKey123!$');
-        
-        res.json({
-            message: 'Login riuscito',
-            token: token,
-            user: user
-        });
-    };
-});
-
-  
 
 
 // REGISTRAZIONE UTENTE
