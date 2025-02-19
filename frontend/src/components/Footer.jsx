@@ -35,7 +35,7 @@ const Footer = () => {
           Progetto finanziato dalla Regione Lazio, con contributo di 30.000€ tramite bando POR FESR Pre Seed Plus.
         </Text><br /><br/>
             <Text style={{ color: '#ffffff' }}>
-              <img style={{height:25}} src = "https://www.egamex.eu/public/assets/images/footer/preseed_banner.webp"></img>
+              <img style={{height:22}} src = "https://www.egamex.eu/public/assets/images/footer/preseed_banner.webp"></img>
             </Text>
           </Col>
 

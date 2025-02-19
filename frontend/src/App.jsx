@@ -10,6 +10,7 @@ import Navbar from './components/Navbar';
 import ModificaProfiloPage from './pages/ModificaProfiloPage';
 import ModificaProfilo from './pages/ModificaProfilo';
 import AdminDashboard from './components/AdminDashboard';
+import PrivateRoute from './pages/PrivateRoute';
 
 const { Content } = Layout;
 
@@ -29,8 +30,15 @@ const App = () => {
               <Route path="/tornei" element={<Tornei />} />
               <Route path="/store" element={<Store />} />
               <Route path="/edit" element={<ModificaProfilo />}/>
-              <Route path="/adminDashboard" element={<AdminDashboard />}/>
-              <Route path="/login" element={<Login />} /> {/* Aggiungi la route per la pagina di login */}
+              <Route 
+          path="/adminDashboard" 
+          element={
+            <PrivateRoute 
+              element={<AdminDashboard />} 
+              roleRequired="admin" 
+            />
+          } 
+        />              <Route path="/login" element={<Login />} /> {/* Aggiungi la route per la pagina di login */}
             </Routes>
           </Content>
         </Layout>

@@ -12,7 +12,7 @@ import {
   Dropdown,
   Avatar,
 } from "antd";
-import axios from "axios"; // ⬅ Importa axios per chiamare il backend
+import axios from "axios";
 import {
   HomeOutlined,
   TrophyOutlined,
@@ -27,31 +27,33 @@ import {
   DiscordOutlined,
 } from "@ant-design/icons";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import { useNavigate } from "react-router-dom"; // Usa useNavigate invece di useHistory
+import { useNavigate } from "react-router-dom";
 import { Content } from "antd/es/layout/layout";
 
 const { Sider } = Layout;
 const { TabPane } = Tabs;
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Stato per gestire il login
-  const [isModalVisible, setIsModalVisible] = useState(false); // Stato per la visibilità della modale
-  const [activeTab, setActiveTab] = useState("login"); // Stato per gestire il tab attivo
-  const navigate = useNavigate(); // Gestire la navigazione con useNavigate
-  const [isMobile, setIsMobile] = useState(false); // Stato per determinare se è dispositivo mobile
-  const [username, setUsername] = useState(null); // Stato per gestire il nome utente
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
+  const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
+  const [username, setUsername] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const token = localStorage.getItem('token');
+  const apiUrl = import.meta.env.VITE_BACKEND_URL;
 
   const showLoginModal = () => {
-    setIsModalVisible(true); // Mostra la modale di login
+    setIsModalVisible(true);
   };
 
   const handleProfileUpdate = () => {
-    navigate("/modifica-profilo"); // Naviga alla pagina di modifica profilo
+    navigate("/modifica-profilo");
   };
 
   const hideLoginModal = () => {
-    setIsModalVisible(false); // Nascondi la modale di login
+    setIsModalVisible(false);
   };
 
   const handleCancel = () => {
@@ -64,48 +66,90 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // Rimuove il token dal localStorage
-    setIsLoggedIn(false); // Imposta isLoggedIn su false
-    setUsername(null); // Rimuove il nome utente
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    setUsername(null);
     message.success("Logout effettuato con successo");
   };
 
   const handleLoginLogout = () => {
     if (isLoggedIn) {
-      handleLogout(); // Esegui il logout
+      handleLogout();
     } else {
-      showLoginModal(); // Mostra la modale di login
+      showLoginModal();
     }
   };
 
-  // Navigazione tra le pagine
   const handleNavigation = (page) => {
     navigate(`/${page}`);
   };
 
-  // Funzione per gestire il ridimensionamento della finestra
+  // Funzione per estrarre l'ID dell'utente dal token JWT
+const getUserIdFromToken = (token) => {
+  if (!token) return null;
+
+  const payload = JSON.parse(atob(token.split('.')[1])); // Decodifica il payload del token
+  return payload.id; // Assumi che l'ID sia nel campo 'id' del payload
+};
+
+
+useEffect(() => {
+  if (!token) {
+    console.log("Token non trovato, impossibile verificare il ruolo");
+    return;
+  }
+
+  // Recupera l'ID dal token
+  const userId = getUserIdFromToken(token);
+
+  // Effettua la richiesta per ottenere i dettagli dell'utente tramite l'ID
+  axios
+    .get(`${apiUrl}/api/user/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((response) => {
+      console.log("Risposta del server:", response.data);
+
+      if (response.data && response.data.role === "admin") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+      setUsername(response.data.username);
+      setIsLoggedIn(true);
+    })
+    .catch((err) => {
+      console.error("Errore nel recupero dei dati dell'utente:", err);
+      setIsAdmin(false);
+      setIsLoggedIn(false);
+    });
+}, [token]);
+
+
+  useEffect(() => {
+    console.log("isAdmin cambiato a:", isAdmin);
+  }, [isAdmin]);
+
   const handleResize = () => {
     if (window.innerWidth <= 768) {
-      setCollapsed(true); // Chiudi la sidebar su schermi piccoli
-      setIsMobile(true); // Imposta il flag mobile a true
+      setCollapsed(true);
+      setIsMobile(true);
     } else {
-      setCollapsed(false); // Espandi la sidebar su schermi più grandi
-      setIsMobile(false); // Imposta il flag mobile a false
+      setCollapsed(false);
+      setIsMobile(false);
     }
   };
 
   useEffect(() => {
-    handleResize(); // Imposta lo stato iniziale basato sulla larghezza della finestra
+    handleResize();
 
-    // Aggiungi l'event listener per il resize della finestra
     window.addEventListener("resize", handleResize);
 
-    // Pulizia dell'event listener quando il componente viene smontato
     return () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-  // Funzione per determinare gli items del menu
+
   const getMenuItems = () => {
     const items = [
       {
@@ -116,52 +160,18 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         style: {
           fontSize: 16,
           fontWeight: "500",
-          color: "#FFFFFF", // Colore del testo
-          backgroundColor: "#B871F7", // Colore di sfondo trasparente
-          borderRadius: "8px", // Angoli arrotondati
-          transition: "background-color 0.3s", // Transizione per il colore di sfondo al passaggio del mouse
+          color: "#FFFFFF",
+          backgroundColor: "#B871F7",
+          borderRadius: "8px",
+          transition: "background-color 0.3s",
         },
         onMouseEnter: (e) => {
-          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.3)"; // Colore di sfondo al passaggio del mouse
+          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
         },
         onMouseLeave: (e) => {
-          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.1)"; // Colore di sfondo originale
+          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
         },
       },
-      /*
-      {
-        key: "2",
-        icon: <TrophyOutlined style={{ fontSize: 20 }} />,
-        label: "Tornei",
-        onClick: () => handleNavigation("tornei"),
-        style: {
-          fontSize: 17,
-          fontWeight: "500",
-        },
-      },
-      
-    {
-      key: "3",
-      icon: <ShoppingCartOutlined style={{ fontSize: 20 }} />,
-      label: "Store",
-      onClick: () => handleNavigation("store"),
-      style:{
-        fontSize:17,
-        fontWeight:"500"
-      }
-    },
-    
-      {
-        key: "4",
-        icon: <LoginOutlined style={{ fontSize: 20 }} />,
-        label: isLoggedIn ? null : "Login",
-        onClick: isLoggedIn ? handleLogout : handleLoginLogout,
-        style: {
-          fontSize: 17,
-          fontWeight: "500",
-        },
-      },
-      */
     ];
 
     if (isAdmin) {
@@ -183,51 +193,44 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
     return items;
   };
-  const apiUrl = import.meta.env.VITE_BACKEND_URL;
-  // Metodo di registrazione
+
+
   const handleRegister = async (values) => {
     try {
-      // Assicurati che l'URL corrisponda al tuo backend
       const response = await axios.post(`${apiUrl}/api/register`, {
         email: values.email,
         password: values.password,
         username: values.username,
       });
 
-      message.success(response.data.message); // Mostra messaggio di successo
-      setIsModalVisible(false); // Chiudi la modale
+      message.success(response.data.message);
+      setIsModalVisible(false);
     } catch (error) {
-      message.error(
-        error.response?.data?.error || "Errore nella registrazione."
-      );
+      message.error(error.response?.data?.error || "Errore nella registrazione.");
     }
   };
 
   const handleLogin = async (values) => {
-    console.log("Dati inviati:", values); // Controlla i dati inviati
+    console.log("Dati inviati:", values);
     try {
-      // Invia email e password al backend
       const response = await axios.post(`${apiUrl}/api/login`, {
-        email: values.email, // Cambiato da username a email
+        email: values.email,
         password: values.password,
       });
 
-      //console.log("Risposta ricevuta:", response); // Controlla la risposta
-
       if (response.data.message) {
-        // Se la risposta contiene il messaggio di successo
-        localStorage.setItem("token", response.data.token); // Salva il token
-        localStorage.setItem("username", values.email); // Salva l'email come username
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("username", values.email);
 
-        setIsLoggedIn(true); // Utente loggato
-        setUsername(values.email); // Salva l'email come username
-        message.success(response.data.message); // Mostra il messaggio di successo
-        setIsModalVisible(false); // Chiudi la modale
+        setIsLoggedIn(true);
+        setUsername(values.email);
+        message.success(response.data.message);
+        setIsModalVisible(false);
       } else {
-        message.error(response.data.error || "Credenziali errate."); // Mostra il messaggio di errore
+        message.error(response.data.error || "Credenziali errate.");
       }
     } catch (error) {
-      console.error("Errore durante il login:", error); // Stampa l'errore
+      console.error("Errore durante il login:", error);
       message.error(error.response?.data?.error || "Errore nel login.");
     }
   };
@@ -245,7 +248,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             layout="vertical"
           >
             <Form.Item
-              name="email" // Cambiato da 'username' a 'email'
+              name="email"
               rules={[
                 {
                   required: true,
@@ -265,10 +268,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 },
               ]}
             >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Password"
-              />
+              <Input.Password prefix={<LockOutlined />} placeholder="Password" />
             </Form.Item>
 
             <Form.Item>
@@ -328,10 +328,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 },
               ]}
             >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Password"
-              />
+              <Input.Password prefix={<LockOutlined />} placeholder="Password" />
             </Form.Item>
 
             <Form.Item
@@ -351,10 +348,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                 }),
               ]}
             >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Conferma Password"
-              />
+              <Input.Password prefix={<LockOutlined />} placeholder="Conferma Password" />
             </Form.Item>
 
             <Form.Item>
@@ -368,39 +362,15 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     },
   ];
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setIsLoggedIn(true);
-      // Aggiungi il recupero del nome utente dal localStorage
-      const savedUsername = localStorage.getItem("username");
-      setUsername(savedUsername);
-
-      // Fai una richiesta al backend per ottenere il ruolo dell'utente
-      axios
-        .get(`${apiUrl}/api/getUserRole`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        .then((response) => {
-          if (response.data.role === "admin") {
-            setIsAdmin(true);
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-        });
-    }
-  }, []);
-
   return (
     <>
       <Sider
         style={{
-          position: "fixed", // Sidebar fissa
+          position: "fixed",
           top: 60,
           left: 0,
           bottom: 0,
-          zIndex: 10, // Mantieni la sidebar sopra altri contenuti
+          zIndex: 10,
           backgroundColor: "#0F0E17",
         }}
         width={250}
@@ -408,26 +378,8 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         collapsed={collapsed}
         onCollapse={setCollapsed}
         collapsedWidth={collapsed ? 80 : 100}
-        trigger={isMobile ? null : undefined} // Blocca l'apertura della sidebar su dispositivi mobili
+        trigger={isMobile ? null : undefined}
       >
-        {/*
-        <div className="logo">
-          <img
-            src={
-              collapsed ? "https://i.postimg.cc/763kSK59/white-Sm-Logo.png" : "https://i.postimg.cc/fLns3GRk/white-Logo.png"
-            }
-            alt="Logo"
-            style={{
-              width: collapsed ? "82px" : "130px", // Imposta una larghezza ridotta per il logo quando la sidebar è collassata
-              height: "auto", // Mantenere le proporzioni corrette
-              transition: "width 0.3s ease", // Aggiungi una transizione per un effetto fluido
-              margin: collapsed ? "20px auto" : "20px 20px", // Centra il logo orizzontalmente
-              display: "block", // Blocca il logo in modo che venga centrato
-            }}
-          />
-        </div>
-        */}
-
         <Menu
           theme="dark"
           mode="inline"
@@ -436,7 +388,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "15px", // Spazio uniforme tra gli elementi
+            gap: "15px",
             borderRight: 0,
             backgroundColor: "#0F0E17",
             padding:5
@@ -494,7 +446,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
-            items={tabsItems} // Passa gli items invece delle TabPane
+            items={tabsItems}
           />
         </Modal>
       </Sider>

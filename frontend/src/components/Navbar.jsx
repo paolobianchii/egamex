@@ -80,14 +80,41 @@ const Navbar = () => {
     setIsLoggedIn(false);
     setUsername(null);
     message.success("Logout effettuato con successo");
-
-    // Ricarica la pagina e reindirizza alla home
+  
+    // Usa `navigate` per fare il redirect
     setTimeout(() => {
-      window.location.reload(); // Ricarica la pagina
-      window.location.href = "/"; // Reindirizza alla home
       setLoading(false); // Termina il caricamento
       setIsLoggingOut(false); // Nascondi la sovrapposizione
-    }, 1000); // Fai durare il loading un po' per simularlo
+      navigate("/"); // Redirigi l'utente alla pagina di login
+    }, 1000); // Aspetta un po' prima di fare il redirect
+  };
+  const redirectToDiscord = () => {
+    // Reindirizza l'utente alla route del backend per l'autenticazione Discord
+    window.location.href = "http://localhost:5002/api/auth/discord";
+};
+
+  const handleDiscordLogin = async () => {
+
+    setLoading(true);
+    try {
+      const response = await axios.get(`${apiUrl}/api/auth/discord`);
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        setIsLoggedIn(true);
+        setUsername(response.data.user.username);
+        setRole(response.data.user.role);
+        message.success("Accesso con Discord riuscito!");
+        navigate("/");
+      } else {
+        message.error("Errore durante l'accesso con Discord.");
+      }
+    } catch (error) {
+      message.error("Errore durante il login con Discord.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async (values) => {
@@ -317,8 +344,9 @@ const Navbar = () => {
         {/* Discord login button */}
         <Form.Item>
           <Button
+              onClick={redirectToDiscord}  // Cambiato da disabled a onClick
+
             block
-            disabled
             style={{
               backgroundColor: '#7289DA',
               borderRadius: '8px',

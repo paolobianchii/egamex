@@ -1,10 +1,26 @@
 const express = require ("express");
 const { supabase } = require("../lib/supabase");
+const NodeCache = require("node-cache");
 
 const router = express.Router();
+const cache = new NodeCache({ stdTTL: 60 }); // Cache con TTL di 60 secondi
 
+// Middleware per caching con NodeCache
+const cacheMiddleware = (req, res, next) => {
+  const key = "tornei_list";
+  const cachedData = cache.get(key);
+  if (cachedData) {
+      return res.json(cachedData); // Se i dati sono nella cache, restituiscili
+  }
+  res.sendResponse = res.json;
+  res.json = (body) => {
+      cache.set(key, body); // Salva nella cache
+      res.sendResponse(body); // Restituisci la risposta originale
+  };
+  next(); // Continua con il flusso, chiamando la route effettiva
+};
 
-router.get("/", async (req, res) => {
+router.get("/",cacheMiddleware ,async (req, res) => {
     try {
         const { data, error } = await supabase.from("tornei").select("*");
         //console.log("Dati ricevuti:", data);  // Aggiungi questo log

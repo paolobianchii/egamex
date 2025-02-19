@@ -3,25 +3,76 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const tournamentRoutes = require("./routes/tournaments");
 const usersRoutes = require("./routes/users");
+const passport = require("passport");
+const DiscordStrategy = require("passport-discord").Strategy;
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken"); // Aggiunto per la gestione dei JWT
 const { supabase } = require("./lib/supabase");
 const partecipazioniRoutes = require("./routes/partecipazioni"); // Aggiungi la tua route
+const compression = require("compression");
+const NodeCache = require("node-cache");
+const roleRouter = require('./routes/users');
+const session = require("express-session");
 
 
 dotenv.config(); // Carica le variabili d'ambiente
-
+const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 }); // Cache con TTL di 60 sec
 
 const supUrl = process.env.SUPABASE_URL; // Corretto
 const supAnonKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Aggiunto per coerenza
 
 const app = express();
 
-
-
 app.use(bodyParser.json());
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+    origin: 'http://localhost:5173', // il dominio del tuo frontend
+    methods: 'GET,POST',
+    allowedHeaders: 'Content-Type,Authorization',
+  }));app.use(express.json());
+
+passport.use(
+    new DiscordStrategy(
+      {
+        clientID: '1336795914349580319', // Inserisci il tuo Client ID di Discord
+        clientSecret: 'Hy3PUVeKrhA69DXp82yLbTONfHuRe-f4', // Inserisci il tuo Client Secret
+        callbackURL: 'https://kwxxejdmvgvsteairgyp.supabase.co/auth/v1/callback', // URL di callback
+        scope: ['identify', 'email'], // Permessi richiesti
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        // In questa funzione, recuperiamo i dati dell'utente da Discord
+        // Puoi usare l'access token per fare chiamate API e ottenere più dati, se necessario.
+        try {
+          const user = {
+            id: profile.id,
+            username: profile.username,
+            email: profile.email || 'non disponibile', // Se non ci fosse email
+            discordId: profile.id,
+          };
+  
+          // In un'applicazione reale, dovresti verificare se l'utente esiste nel tuo database
+          // e registrarlo se è la prima volta che accede.
+  
+          // Simula un salvataggio in database e restituisce l'utente
+          // (puoi persistere questo utente nel tuo database, se necessario)
+          done(null, user);
+        } catch (error) {
+          done(error);
+        }
+      }
+    )
+  );
+  
+  // Middleware per gestire la sessione utente
+  app.use(session({ secret: 'mySuperSecretKey_1234!$%#', resave: false, saveUninitialized: false }));
+  app.use(passport.initialize());
+  app.use(passport.session());
+  
+  // Serializzazione e deserializzazione dell'utente
+  passport.serializeUser((user, done) => done(null, user));
+  passport.deserializeUser((user, done) => done(null, user));
+  
+  // Endpoint di autenticazione con Discord
+  app.get("/api/auth/discord", passport.authenticate("discord"));
 
 console.log("SUPABASE_URL:", supUrl);
 console.log("SUPABASE_ANON_KEY:", supAnonKey);
@@ -30,6 +81,50 @@ console.log("SUPABASE_ANON_KEY:", supAnonKey);
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/partecipazioni", partecipazioniRoutes);
 app.use("/api/users", usersRoutes);
+app.use('/api/role', roleRouter);  // Assicurati che il prefisso /api sia corretto
+
+
+// Middleware per caching con node-cache
+const cacheMiddleware = (req, res, next) => {
+    const key = req.originalUrl;
+    const cachedData = cache.get(key);
+    if (cachedData) {
+        return res.json(cachedData);
+    }
+    res.sendResponse = res.json;
+    res.json = (body) => {
+        cache.set(key, body);
+        res.sendResponse(body);
+    };
+    next();
+};
+
+app.get('/auth/discord/callback', (req, res) => {
+    // Recupera il parametro state dalla query string
+    const receivedState = req.query.state;
+
+    // Verifica che il parametro state corrisponda a quello memorizzato nella sessione
+    if (receivedState !== req.session.state) {
+        return res.status(400).json({ error: 'Invalid state parameter' });
+    }
+
+    // Se il parametro state è valido, continua con il processo di autenticazione
+    passport.authenticate('discord', { failureRedirect: '/' }),
+    (req, res) => {
+        // Dopo il login riuscito, puoi generare un token JWT o gestire la sessione utente
+        const user = req.user;
+        const token = jwt.sign({ id: user.id, username: user.username, email: user.email }, 'mySuperSecretJWTKey123!$');
+        
+        res.json({
+            message: 'Login riuscito',
+            token: token,
+            user: user
+        });
+    };
+});
+
+  
+
 
 // REGISTRAZIONE UTENTE
 app.post('/api/register', async (req, res) => {
@@ -133,7 +228,7 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
-app.get("/api/partecipanti/:torneoId", async (req, res) => {
+app.get("/api/partecipanti/:torneoId", cacheMiddleware, async (req, res) => {
     const { torneoId } = req.params;
 
     try {

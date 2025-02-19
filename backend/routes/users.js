@@ -40,6 +40,42 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// 6️⃣ Ottieni il ruolo dell'utente tramite JWT
+// Endpoint per ottenere il ruolo dell'utente
+router.get("/role", async (req, res) => {
+  const token = req.header("Authorization")?.replace("Bearer ", "");
+
+  if (!token) {
+    return res.status(401).json({ error: "Token mancante" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const userId = decoded.userId;
+
+    const { data, error } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+
+    res.json({ role: data.role });
+  } catch (error) {
+    console.error("Errore nel recupero del ruolo:", error.message);
+    res.status(500).json({ error: "Errore durante il recupero del ruolo dell'utente" });
+  }
+});
+
+
+
 // REGISTRAZIONE UTENTE
 router.post("/register", async (req, res) => {
   const { email, password, username } = req.body;
