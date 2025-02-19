@@ -13,6 +13,7 @@ const compression = require("compression");
 const NodeCache = require("node-cache");
 const roleRouter = require('./routes/users');
 const session = require("express-session");
+const MemoryStore = require('memorystore')(session); // Importa il MemoryStore
 
 
 dotenv.config(); // Carica le variabili d'ambiente
@@ -61,10 +62,20 @@ passport.use(
       }
     )
   );
-  
+  const sessionStore = process.env.NODE_ENV === 'production' ? new MemoryStore() : null;
+
   // Middleware per gestire la sessione utente
-  app.use(session({ secret: 'mySuperSecretKey_1234!$%#', resave: false, saveUninitialized: false }));
-  app.use(passport.initialize());
+  app.use(session({
+    secret: 'mySuperSecretKey_1234!$%#',
+    resave: false,
+    saveUninitialized: false,
+    store: sessionStore,  // Usa MemoryStore solo in sviluppo
+    cookie: {
+        secure: process.env.NODE_ENV === 'production', // Imposta cookie sicuro in produzione
+        httpOnly: true, // Protegge dai rischi di XSS
+        maxAge: 1000 * 60 * 60 * 24, // Imposta una durata di sessione (es. 1 giorno)
+    }
+}));  app.use(passport.initialize());
   app.use(passport.session());
   
   // Serializzazione e deserializzazione dell'utente
