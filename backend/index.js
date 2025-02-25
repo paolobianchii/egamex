@@ -13,6 +13,8 @@ const compression = require("compression");
 const NodeCache = require("node-cache");
 const roleRouter = require('./routes/users');
 const session = require("express-session");
+const path = require("path");
+
 
 
 dotenv.config(); // Carica le variabili d'ambiente
@@ -79,6 +81,7 @@ app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/partecipazioni", partecipazioniRoutes);
 app.use("/api/users", usersRoutes);
 app.use('/api/role', roleRouter);  // Assicurati che il prefisso /api sia corretto
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 // Middleware per caching con node-cache
@@ -230,6 +233,7 @@ app.get("/api/partecipanti/:torneoId", cacheMiddleware, async (req, res) => {
             utente_id: p.utente_id,   // id dell'utente
             username: p.users.username,
             email: p.users.email,
+            punteggio: p.punteggio,
         })));
     } catch (err) {
         res.status(500).json({ error: err.message });

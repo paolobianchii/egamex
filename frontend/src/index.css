@@ -62,6 +62,103 @@
   border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Bordi più morbidi e trasparenti */
   overflow: hidden !important; /* Nasconde eventuali bordi non arrotondati */
 }
+.top1 {
+  background: linear-gradient(90deg, gold, orange);
+  color: black !important;
+  font-weight: bold;
+  text-shadow: 0px 0px 8px rgba(255, 215, 0, 0.8);
+}
+
+.top2 {
+  background: linear-gradient(90deg, silver, gray);
+  color: black !important;
+  font-weight: bold;
+  text-shadow: 0px 0px 8px rgba(192, 192, 192, 0.8);
+}
+
+.top3 {
+  background: linear-gradient(90deg, #cd7f32, #8b4513);
+  color: white !important;
+  font-weight: bold;
+  text-shadow: 0px 0px 8px rgba(205, 127, 50, 0.8);
+}
+
+/* Effetto hover per tutta la tabella */
+.ant-table-tbody > tr:hover {
+  background-color: rgba(0, 255, 255, 0.2) !important;
+  transition: 0.3s ease-in-out;
+}
+.tournament-modal .ant-modal-content {
+  background: rgba(0, 0, 0, 0.8) !important; /* Sfondo scuro opaco */
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0px 0px 15px rgba(0, 255, 255, 0.2);
+}
+
+.tournament-modal .ant-modal-header {
+  background-color: #1e1e1e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tournament-modal .ant-modal-title {
+  color: white;
+}
+
+.tournament-modal .ant-modal-close {
+  color: white !important;
+}
+
+/* Leaderboard.css */
+.leaderboard-table {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.leaderboard-table .ant-table {
+  background: #1c1c1e;
+  color: white;
+}
+
+.leaderboard-table .ant-table-thead > tr > th {
+  background: #2c2c2e !important;
+  color: #a970ff;
+  text-transform: uppercase;
+  font-weight: bold;
+  text-align: center;
+}
+
+.leaderboard-table .ant-table-tbody > tr > td {
+  text-align: center;
+  color: white;
+}
+
+.leaderboard-table .ant-tag {
+  font-weight: bold;
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+.leaderboard-table .ant-tag[color="gold"] {
+  background: #ffd700;
+  color: black;
+}
+
+.leaderboard-table .ant-tag[color="silver"] {
+  background: #c0c0c0;
+  color: black;
+}
+
+.leaderboard-table .ant-tag[color="#cd7f32"] {
+  background: #cd7f32;
+  color: white;
+}
+
+.leaderboard-table .ant-tag[color="purple"] {
+  background: #a970ff;
+  color: white;
+}
+
 
 .custom-modal .ant-modal-header {
   background: rgba(255, 255, 255, 0.1) !important; /* Header più trasparente */

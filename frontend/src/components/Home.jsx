@@ -9,6 +9,8 @@ import {
   Input,
   Modal,
   Table,
+  Switch,
+  notification,
 } from "antd";
 import axios from "axios";
 import { CalendarOutlined } from "@ant-design/icons"; // Importa l'icona
@@ -24,23 +26,27 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(""); // Stato per la ricerca
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
+  const [showTeams, setShowTeams] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState(null); // Stato per l'utente loggato
+  const [isLoginVisible, setIsLoginVisible] = useState(false); // Stato per la modale di login
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [partecipanti, setPartecipanti] = useState([]);
   const [loadingPartecipanti, setLoadingPartecipanti] = useState(false);
   const [torneoId, setTorneoId] = useState(null); // Definisci lo stato torneoId
   const [error, setError] = useState(null);
+  const [torneoSelezionato, setTorneoSelezionato] = useState(null);
 
-  const openModal = async (torneoId) => {
-    if (!torneoId) return;
+  const openModal = async (torneo) => {
+    if (!torneo) return;
 
-    setTorneoId(torneoId);
+    setTorneoSelezionato(torneo);
     setLoadingPartecipanti(true);
     setIsModalVisible(true);
 
     try {
       const response = await axios.get(
-        `${apiUrl}/api/partecipanti/${torneoId}`
+        `${apiUrl}/api/partecipanti/${torneo.id}`
       );
 
       if (Array.isArray(response.data) && response.data.length > 0) {
@@ -55,44 +61,111 @@ const Home = () => {
     }
   };
 
+  useEffect(() => {
+    axios
+      .get(`${apiUrl}/api/tournaments`)
+      .then((response) => {
+        //console.log("Risposta API tornei:", response.data); // Aggiungi questo log per verificare
+        setTornei(response.data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Errore nel recupero dei tornei:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  const getRankedLeaderboard = (partecipanti) => {
+    // Ordina i partecipanti in base al punteggio decrescente
+    const sortedPlayers = [...partecipanti].sort(
+      (a, b) => b.punteggio - a.punteggio
+    );
+  
+    let lastPunteggio = null;
+    let lastRank = 0;
+    let skipRank = 0;
+  
+    return sortedPlayers.map((player, index) => {
+      // Se il punteggio è uguale al precedente, assegna la stessa posizione
+      if (player.punteggio === lastPunteggio) {
+        skipRank++;
+      } else {
+        lastRank += 1 + skipRank;
+        skipRank = 0;
+      }
+  
+      lastPunteggio = player.punteggio;
+  
+      return { ...player, posizione: lastRank };
+    });
+  };
+  
+  const rankedPlayers = getRankedLeaderboard(partecipanti);
+
   const columns = [
-    /*
     {
-      title: "ID Partecipazione",
-      dataIndex: "partecipazione_id",
-      key: "partecipazione_id",
-      width: 150,
+      title: (
+        <span style={{ color: "#FFA500", fontWeight: "bold" }}>Posizione</span>
+      ),
+      dataIndex: "posizione",
+      key: "posizione",
+      render: (text) => (
+        <span style={{ color: "white", fontWeight: "bold" }}>{text}</span>
+      ),
     },
     {
-      title: "ID Utente",
-      dataIndex: "utente_id",
-      key: "utente_id",
-      width: 150,
-    },
-    {
-      title: "Torneo ID",
-      dataIndex: "torneo_id",
-      key: "torneo_id",
-      render: (text) => text || "N/A", // Rendi più robusto se manca il valore
-    },
-    */
-    {
-      title: "Email",
-      dataIndex: "email",
-      key: "email",
-      render: (text) => text || "N/A",
-    },
-    {
-      title: "Username",
+      title: (
+        <span style={{ color: "#00FF00", fontWeight: "bold" }}>Username</span>
+      ),
       dataIndex: "username",
       key: "username",
-      render: (text) => text || "N/A",
+      render: (text) => (
+        <span style={{ color: "white", fontWeight: "bold" }}>
+          {text || "N/A"}
+        </span>
+      ),
     },
     {
-      title: "Punteggio",
+      title: (
+        <span style={{ color: "#FF4500", fontWeight: "bold" }}>Game 1</span>
+      ),
+      dataIndex: "game1",
+      key: "game1",
+      render: (text) => (
+        <span style={{ color: "white", fontWeight: "bold" }}>
+          {text || "-"}
+        </span>
+      ),
+    },
+    {
+      title: (
+        <span style={{ color: "#1E90FF", fontWeight: "bold" }}>Game 2</span>
+      ),
+      dataIndex: "game2",
+      key: "game2",
+      render: (text) => (
+        <span style={{ color: "white", fontWeight: "bold" }}>
+          {text || "-"}
+        </span>
+      ),
+    },
+    {
+      title: (
+        <span style={{ color: "gold", fontWeight: "bold" }}>Punteggio</span>
+      ),
       dataIndex: "punteggio",
       key: "punteggio",
-      render: (punteggio) => punteggio || "0",
+      render: (int) => (
+        <span
+          style={{
+            color: "gold",
+            fontWeight: "bold",
+            textShadow: "0px 0px 10px rgba(255, 215, 0, 0.8)",
+          }}
+        >
+          {int || "0"}
+        </span>
+      ),
     },
   ];
 
@@ -107,19 +180,41 @@ const Home = () => {
     }
   }, [partecipanti]);
 
-  useEffect(() => {
-    axios
-      .get(`${apiUrl}/api/tournaments`)
-      .then((response) => {
-        //console.log("Risposta API tornei:", response.data); // Aggiungi questo log per verificare
-        setTornei(response.data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Errore nel recupero dei tornei:", error);
-        setLoading(false);
+
+// Funzione per gestire l'iscrizione
+const handleIscrizione = () => {
+  // Verifica se l'utente è loggato (adatta questa parte al tuo sistema di autenticazione)
+  const isLoggedIn = localStorage.getItem("authToken") !== null; // Verifica la presenza di un token di autenticazione
+
+  if (!isLoggedIn) {
+    // Mostra la notifica di errore se l'utente non è loggato
+    notification.error({
+      message: "Errore",
+      description: "Devi essere registrato per iscriverti a questo torneo.",
+      duration: 3, // Durata della notifica
+    });
+    return;
+  }
+
+  // Se l'utente è loggato, continua con il processo di iscrizione
+  const torneoId = torneoSelezionato.id;
+
+  // Logica per iscrivere l'utente al torneo
+  axios
+    .post(`${apiUrl}/api/partecipanti/${torneoId}`, { userId, punteggio: 0 })
+    .then((response) => {
+      // Gestisci la risposta e aggiorna lo stato
+      setPartecipanti([...partecipanti, response.data]);
+      notification.success({
+        message: "Iscrizione completata",
+        description: "Sei stato iscritto al torneo con punteggio 0.",
       });
-  }, []);
+    })
+    .catch((error) => {
+      console.error("Errore nell'iscrizione:", error);
+    });
+};
+
 
   // Funzione debounce per gestire la ricerca
   const handleSearchChange = debounce((value) => {
@@ -216,47 +311,66 @@ const Home = () => {
 
         <Row gutter={16} style={{ marginBottom: "40px", marginTop: 70 }}>
           <Modal
-            title={
-              <span className="fs-4 fw-bold text-white">Classifica Torneo</span>
-            } // Titolo con Bootstrap
+
             open={isModalVisible}
             onCancel={() => setIsModalVisible(false)}
             footer={null}
-            width={800}
+            width="90vw"
+            className="tournament-modal" // Nuova classe più specifica
+            maskClassName="custom-mask"
             destroyOnClose
-            className="custom-modal" // Applichiamo una classe personalizzata alla modale
-            maskClassName="custom-mask" // Applichiamo una classe personalizzata alla maschera (sfondo scuro sotto la modale)
           >
-            <Table
-              dataSource={partecipanti}
-              columns={columns}
-              rowKey="partecipazione_id"
-              loading={loadingPartecipanti}
-              scroll={{ y: 400 }}
-              locale={{
-                emptyText: (
-                  <Empty
-                    description={
-                      <span style={{ color: "#ccc" }}>
-                        Nessun partecipante registrato
-                      </span>
-                    }
-                  />
-                ),
-              }}
-              rowClassName={(record, index) => {
-                // Differenzia i ranghi con sfondi diversi per i top 3
-                if (index === 0) return "top1"; // Primo posto
-                if (index === 1) return "top2"; // Secondo posto
-                if (index === 2) return "top3"; // Terzo posto
-                return ""; // Altri posti
-              }}
+            <span
               style={{
-                backgroundColor: "#282828", // Sfondo della tabella
-                color: "white",
+                color: "#00FFFF",
+                fontWeight: "bold",
+                fontSize: 25,
+                zIndex: 1,
               }}
-              pagination={false} // Rimuovi la paginazione per una visualizzazione più semplice
-            />
+            >
+              {torneoSelezionato?.titolo}
+            </span>
+
+            <div
+              style={{
+                background: "radial-gradient(circle, #111, #000)",
+                padding: "20px",
+                borderRadius: "12px",
+                boxShadow: "0 0 15px rgba(0, 255, 255, 0.5)",
+              }}
+            >
+              <Table
+                dataSource={rankedPlayers} // Usa rankedPartecipanti qui
+                columns={columns}
+                rowKey="partecipazione_id"
+                loading={loadingPartecipanti}
+                scroll={{ y: 400 }}
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description={
+                        <span style={{ color: "#ccc" }}>
+                          Nessun partecipante registrato
+                        </span>
+                      }
+                    />
+                  ),
+                }}
+                rowClassName={(record, index) => {
+                  if (index === 0) return "top1";
+                  if (index === 1) return "top2";
+                  if (index === 2) return "top3";
+                  return "";
+                }}
+                style={{
+                  background: "#222",
+                  borderRadius: "10px",
+                  overflow: "hidden",
+                }}
+                pagination={false}
+              />
+
+            </div>
           </Modal>
 
           {/* Tornei in corso */}
@@ -315,10 +429,11 @@ const Home = () => {
                         cover={
                           <img
                             alt={torneo.titolo}
-                            src={torneo.image}
+                            src={`${apiUrl}${torneo.image}`}
                             style={{ height: "200px", objectFit: "cover" }}
                           />
                         }
+                        
                       >
                         {/* Badge sopra l'immagine */}
                         <div
@@ -328,7 +443,7 @@ const Home = () => {
                             left: "10px",
                             backgroundColor: "#ff4d4f",
                             color: "white",
-                            padding: "5px 10px",
+                            padding: "3px 8px",
                             borderRadius: "8px",
                             fontWeight: "bold",
                             fontSize: 12,
@@ -368,9 +483,6 @@ const Home = () => {
                           }
                         />
                         <div style={{ marginTop: 15, marginBottom: 15 }}>
-                          <span style={{ fontSize: 11, fontWeight: "" }}>
-                            Creato:{" "}
-                          </span>
                           <span style={{ fontSize: 11 }}>
                             {new Date(torneo.data).toLocaleString("it-IT", {
                               weekday: "long", // Giorno della settimana
@@ -385,7 +497,7 @@ const Home = () => {
                         <Button
                           style={{ width: "100%" }}
                           type="primary"
-                          onClick={() => openModal(torneo.id)}
+                          onClick={() => openModal(torneo)}
                           disabled={
                             new Date(torneo.data).getTime() <=
                             currentDate.getTime() - 5 * 24 * 60 * 60 * 1000 // 5 giorni fa
@@ -485,10 +597,11 @@ const Home = () => {
                         cover={
                           <img
                             alt={torneo.titolo}
-                            src={torneo.image}
+                            src={`${apiUrl}${torneo.image}`}
                             style={{ height: "200px", objectFit: "cover" }}
                           />
                         }
+                        
                       >
                         <Meta
                           title={
@@ -520,10 +633,7 @@ const Home = () => {
                           }
                         />
                         <div style={{ marginTop: 15, marginBottom: 15 }}>
-                          <span style={{ fontSize: 11, fontWeight: "" }}>
-                            Creato:{" "}
-                          </span>
-                          <span style={{ fontSize: 11 }}>
+                          <span style={{ fontSize: 11 }} className="text-muted">
                             {new Date(torneo.data).toLocaleString("it-IT", {
                               weekday: "long", // Giorno della settimana
                               year: "numeric", // Anno
@@ -662,7 +772,7 @@ const Home = () => {
             </div>
           </div>
         </div>
-        
+
         <Footer />
       </div>
     </div>
