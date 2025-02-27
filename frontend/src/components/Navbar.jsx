@@ -12,7 +12,7 @@ import {
   message,
   Tabs,
 } from "antd";
-import { UserOutlined, LockOutlined, UserAddOutlined, DiscordOutlined, LoginOutlined } from "@ant-design/icons";
+import { UserOutlined, LockOutlined, UserAddOutlined, DiscordOutlined, LoginOutlined, DownOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../styles/Navbar.css";
@@ -41,10 +41,12 @@ const Navbar = () => {
     if (token) {
       const user = JSON.parse(localStorage.getItem("user"));
       setIsLoggedIn(true);
-      setUsername(user?.email || "");
-      fetchUserDetails(token); // Recupera i dettagli dell'utente, incluso il ruolo
+      setEmail(user?.email || "");  // Imposta la email correttamente
+      setUsername(user?.username || ""); // Imposta lo username se disponibile
+      fetchUserDetails(token);  // Recupera i dettagli aggiuntivi, se necessario
     }
   }, []);
+  
 
   const fetchUserDetails = async (token) => {
     try {
@@ -54,9 +56,10 @@ const Navbar = () => {
         },
       });
       if (response.data && response.data.email) {
-        setUsername(response.data.username);
-        setEmail(response.data.email);
-        setRole(response.data.role); // Imposta il ruolo dell'utente
+        // Imposta i valori in modo condizionale
+        setUsername(response.data.username || user.username);  // Preferisci lo username dell'API
+        setEmail(response.data.email); // Imposta sempre l'email aggiornata
+        setRole(response.data.role); // Imposta il ruolo se necessario
         localStorage.setItem("username", response.data.username);
         localStorage.setItem("email", response.data.email);
         localStorage.setItem("role", response.data.role); // Salva il ruolo
@@ -68,6 +71,7 @@ const Navbar = () => {
       console.error(error);
     }
   };
+  
 
   const showLoginModal = () => setIsModalVisible(true); // Mostra la modale
   const hideLoginModal = () => setIsModalVisible(false); // Nasconde la modale
@@ -75,18 +79,21 @@ const Navbar = () => {
   const handleLogout = () => {
     setIsLoggingOut(true); // Mostra la sovrapposizione di logout
     setLoading(true); // Inizia il caricamento
+    
+    // Rimuovi i dati di autenticazione dal localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("username");
+    
+    // Imposta lo stato di logout
     setIsLoggedIn(false);
     setUsername(null);
+    
     message.success("Logout effettuato con successo");
-  
-    // Usa `navigate` per fare il redirect
+    
+    // Breve timeout prima di eseguire il refresh completo
     setTimeout(() => {
-      setLoading(false); // Termina il caricamento
-      setIsLoggingOut(false); // Nascondi la sovrapposizione
-      navigate("/"); // Redirigi l'utente alla pagina di login
-    }, 1000); // Aspetta un po' prima di fare il redirect
+      window.location.href = "/"; // Esegue un refresh completo e reindirizza alla home
+    }, 500);
   };
   const redirectToDiscord = () => {
     // Reindirizza l'utente alla route del backend per l'autenticazione Discord
@@ -125,6 +132,7 @@ const Navbar = () => {
         email: values.email,
         password: values.password,
       });
+  
       if (response.data.message) {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
@@ -133,13 +141,16 @@ const Navbar = () => {
         setRole(response.data.user.role); // Imposta il ruolo al momento del login
         message.success(response.data.message);
         hideLoginModal();
-
+  
         // Dopo il login, reindirizza in base al ruolo
         if (response.data.user.role === "admin") {
           navigate("/adminDashboard");
         } else {
           navigate("/");
         }
+  
+        // Refresh della pagina dopo il login
+        window.location.reload();
       } else {
         message.error(response.data.error || "Credenziali errate.");
       }
@@ -150,6 +161,7 @@ const Navbar = () => {
       setIsLoggingIn(false);
     }
   };
+  
 
   const handleRegister = async (values) => {
     setLoading(true); // Inizia il caricamento
@@ -169,13 +181,19 @@ const Navbar = () => {
       setLoading(false); // Termina il caricamento
     }
   };
-
+  const handleLogoClick = () => {
+    if (role === 'admin') {
+      
+      navigate('adminDashboard');  // Reindirizza alla dashboard dell'admin
+    } else {
+      navigate('/');  // Reindirizza alla homepage
+    }
+  };
   const userMenu = (
     <Menu>
-      <Menu.Item key="1" disabled>
-        {username || "Utente"}
-      </Menu.Item>
+
       <Menu.Item
+     
         key="2"
         onClick={() => {
           console.log("Navigating with Username:", username); // Debug
@@ -185,11 +203,7 @@ const Navbar = () => {
       >
         Modifica Profilo
       </Menu.Item>
-      {role === 'admin' && (
-        <Menu.Item key="4" onClick={() => navigate('/adminDashboard')}>
-          Gestione
-        </Menu.Item>
-      )}
+
       <Menu.Item key="3" onClick={handleLogout}>
         Logout
       </Menu.Item>
@@ -213,13 +227,13 @@ const Navbar = () => {
       }}
     >
       <div className="navbar-left">
-  <a href="/" aria-label="Vai alla home">
-    <img
-      src="https://i.postimg.cc/fLns3GRk/white-Logo.png"
-      alt="Logo"
-      style={{ height: "30px" }}
-    />
-  </a>
+      <a href="#" onClick={handleLogoClick} aria-label="Vai alla home">
+          <img
+            src="https://i.postimg.cc/fLns3GRk/white-Logo.png"
+            alt="Logo"
+            style={{ height: "30px" }}
+          />
+        </a>
 </div>
 
       <div
@@ -228,12 +242,18 @@ const Navbar = () => {
       >
         {isLoggedIn ? (
           <Dropdown overlay={userMenu} trigger={["click"]}>
+                <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+
             <Avatar
-              src="https://i.postimg.cc/zGN6QG8M/user-icon.png"
+              src="https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg"
               size="large"
-              style={{ cursor: "pointer" }}
+              style={{ cursor: "pointer", marginRight:10 }}
             />
+            <span style={{ color: '#fff' }} className="usernameText">{username || "Utente"}</span>
+            <DownOutlined style={{ marginLeft: 8, color: '#b9b9b9' }} />
+            </div>
           </Dropdown>
+          
         ) : (
           <Button
   type="primary"
@@ -296,6 +316,7 @@ const Navbar = () => {
         >
           <Input
             prefix={<UserOutlined />}
+            type="email"
             placeholder="Email"
             size="large"
             style={{ height: '45px', fontSize: '16px' }}

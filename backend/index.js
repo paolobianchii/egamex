@@ -154,6 +154,103 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+app.get('/api/teams', async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('teams')  // Nome della tua tabella
+        .select('*');  // Seleziona tutte le colonne
+  
+      if (error) {
+        return res.status(500).json({ message: 'Errore nel recupero dei dati', error });
+      }
+  
+      res.status(200).json(data);
+    } catch (error) {
+      res.status(500).json({ message: 'Errore del server', error });
+    }
+  });
+
+  app.get('/api/teams/:id', async (req, res) => {
+    try {
+      const { id } = req.params;  // Prendi l'ID dalla rotta
+  
+      // Recupera il team specifico con l'ID
+      const { data, error } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('id', id)  // Filtra il team per ID
+        .single();  // Assicurati che venga restituito un solo team (in caso di ricerca univoca)
+  
+      if (error) {
+        return res.status(500).json({ message: 'Errore nel recupero del team', error });
+      }
+  
+      if (!data) {
+        return res.status(404).json({ message: 'Team non trovato' });
+      }
+  
+      // Recupera i partecipanti, se necessario (se sono in una tabella separata)
+      const { data: participants, error: participantsError } = await supabase
+        .from('users')  // Tabella dei partecipanti
+        .select('username')
+        .in('id', data.participants);  // Supponiamo che 'participants' sia un array di ID
+  
+      if (participantsError) {
+        return res.status(500).json({ message: 'Errore nel recupero dei partecipanti', participantsError });
+      }
+  
+      // Includi i partecipanti nei dettagli del team
+      res.status(200).json({ ...data, participants: participants || [] });
+    } catch (error) {
+      res.status(500).json({ message: 'Errore del server', error });
+    }
+  });
+  app.delete('/api/teams/:id', async (req, res) => {
+    try {
+      const { id } = req.params;  // Ottieni l'ID del team dalla rotta
+  
+      // Elimina il team con l'ID specificato
+      const { error } = await supabase
+        .from('teams')
+        .delete()
+        .eq('id', id);  // Filtra per l'ID del team
+  
+      if (error) {
+        return res.status(500).json({ message: 'Errore nell\'eliminazione del team', error });
+      }
+  
+      // Se non c'è errore, invia una risposta di successo
+      res.status(200).json({ message: 'Team eliminato con successo' });
+    } catch (error) {
+      res.status(500).json({ message: 'Errore del server', error });
+    }
+  });
+  
+
+// Endpoint per creare un team
+app.post('/api/teams', async (req, res) => {
+    const { name, participants, score, numParticipants } = req.body;
+  
+    // Inserimento del team nella tabella
+    try {
+      const { data, error } = await supabase.from('teams').insert([
+        {
+          name,
+          score,
+          num_participants: numParticipants,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+  
+      if (error) throw error;
+  
+      res.status(201).json({ message: 'Team creato con successo', team: data });
+    } catch (error) {
+      res.status(500).json({ message: 'Errore nella creazione del team', error });
+    }
+  });
+
 // LOGIN UTENTE
 app.post("/api/login", async (req, res) => {
     const { email, password } = req.body;

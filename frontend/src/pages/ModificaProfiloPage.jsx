@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ModificaProfilo from './ModificaProfilo';
+import ModificaProfilo from '../components/ModificaProfilo';
 import axios from 'axios';
 
 const ModificaProfiloPage = () => {

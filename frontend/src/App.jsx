@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Layout } from "antd";
-import { HashRouter as Router, Routes, Route } from "react-router-dom"; // Usa Routes invece di Switch
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Usa BrowserRouter
 import Sidebar from "./components/Sidebar";
 import Home from "./components/Home";
 import Tornei from "./components/Tornei";
@@ -8,9 +8,13 @@ import Store from "./components/Store";
 import Login from "./components/Login";
 import Navbar from "./components/Navbar";
 import ModificaProfiloPage from "./pages/ModificaProfiloPage";
-import ModificaProfilo from "./pages/ModificaProfilo";
+import ModificaProfilo from "./components/ModificaProfilo";
 import AdminDashboard from "./components/AdminDashboard";
 import PrivateRoute from "./pages/PrivateRoute";
+import GestioneTornei from "./components/GestioneTornei";
+import GestioneUtenti from "./components/GestioneUtenti";
+import Teams from "./components/Teams";
+import TeamDetails from "./components/TeamDetails";
 
 const { Content } = Layout;
 
@@ -39,8 +43,36 @@ const App = () => {
                     />
                   }
                 />
-                <Route path="/login" element={<Login />} />{" "}
-                {/* Aggiungi la route per la pagina di login */}
+                <Route
+                  path="/gestione-tornei"
+                  element={
+                    <PrivateRoute
+                      element={<GestioneTornei />}
+                      roleRequired="admin"
+                    />
+                  }
+                />
+                <Route
+                  path="/gestione-utenti"
+                  element={
+                    <PrivateRoute
+                      element={<GestioneUtenti />}
+                      roleRequired="admin"
+                    />
+                  }
+                />
+                <Route
+                  path="/teams"
+                  element={
+                    <PrivateRoute
+                      element={<Teams />}
+                      roleRequired="admin"
+                    />
+                  }
+                />
+                        <Route path="/teams/:teamId" element={<TeamDetails />} />  {/* Aggiungi questa riga */}
+
+                <Route path="/login" element={<Login />} />
               </Routes>
             </Content>
           </Layout>

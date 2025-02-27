@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'Dimitri';
+  src: url('../font/DIMITRI_.ttf') format('truetype');
+  font-display: swap; /* Migliora la gestione del caricamento del font */
+}
+
 .navbar {
   background-color: #001529; /* Colore di sfondo della navbar */
   width: 100%; /* Imposta la larghezza al 100% */
@@ -6,6 +12,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+}
+
+.usernameText{
+  font-family: "Dimitri" !important;
+  letter-spacing: 0.8px !important;
 }
 
 .search-bar {
@@ -58,7 +70,7 @@
 }
 
 .custom-modal .ant-tabs-tab {
-  color: rgb(167, 166, 166);
+  color: #282828;
   font-weight: bold;
 }
 

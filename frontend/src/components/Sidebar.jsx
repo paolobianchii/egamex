@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Layout,
   Menu,
@@ -25,106 +25,82 @@ import {
   TwitterOutlined,
   XOutlined,
   DiscordOutlined,
+  DashboardOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { useNavigate } from "react-router-dom";
 import { Content } from "antd/es/layout/layout";
 
 const { Sider } = Layout;
-const { TabPane } = Tabs;
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState("login");
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [username, setUsername] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
-
-  const showLoginModal = () => {
-    setIsModalVisible(true);
-  };
-
-  const handleProfileUpdate = () => {
-    navigate("/modifica-profilo");
-  };
-
-  const hideLoginModal = () => {
-    setIsModalVisible(false);
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-  };
-  const handleDiscordLogin = () => {
-    message.success(
-      "Accesso tramite Discord non implementato (futuro sviluppo)"
-    );
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-    setUsername(null);
-    message.success("Logout effettuato con successo");
-  };
-
-  const handleLoginLogout = () => {
-    if (isLoggedIn) {
-      handleLogout();
-    } else {
-      showLoginModal();
-    }
-  };
-
+  const [selectedKey, setSelectedKey] = useState(isAdmin ? "2" : "1"); // Se admin, inizializza a "2" (Dashboard), altrimenti "1" (Home)
+  
   const handleNavigation = (page) => {
     navigate(`/${page}`);
   };
+  const handleMenuClick = (key, path) => {
+    setSelectedKey(key);
+    handleNavigation(path);
+  };
+
 
   // Funzione per estrarre l'ID dell'utente dal token JWT
-const getUserIdFromToken = (token) => {
-  if (!token) return null;
+  const getUserIdFromToken = (token) => {
+    if (!token) return null;
 
-  const payload = JSON.parse(atob(token.split('.')[1])); // Decodifica il payload del token
-  return payload.id; // Assumi che l'ID sia nel campo 'id' del payload
-};
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1])); // Decodifica il payload del token
+      return {
+        id: payload.id,
+        role: payload.role || "user", // Se il ruolo non è nel token, default a "user"
+      };
+    } catch (error) {
+      console.error("Errore nella decodifica del token:", error);
+      return null;
+    }
+  };
 
+  useEffect(() => {
+    if (!token) {
+      console.log("Token non trovato, impossibile verificare il ruolo");
+      return;
+    }
 
-useEffect(() => {
-  if (!token) {
-    console.log("Token non trovato, impossibile verificare il ruolo");
-    return;
-  }
+    const userData = getUserIdFromToken(token);
 
-  // Recupera l'ID dal token
-  const userId = getUserIdFromToken(token);
-
-  // Effettua la richiesta per ottenere i dettagli dell'utente tramite l'ID
-  axios
-    .get(`${apiUrl}/api/user/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    .then((response) => {
-      console.log("Risposta del server:", response.data);
-
-      if (response.data && response.data.role === "admin") {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
-      setUsername(response.data.username);
+    if (userData?.role === "admin") {
+      setIsAdmin(true);
       setIsLoggedIn(true);
-    })
-    .catch((err) => {
-      console.error("Errore nel recupero dei dati dell'utente:", err);
-      setIsAdmin(false);
-      setIsLoggedIn(false);
-    });
-}, [token]);
+      return;
+    }
 
+    // Se il ruolo non è nel token, facciamo una chiamata al backend per sicurezza
+    axios
+      .get(`${apiUrl}/api/user/${userData?.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response) => {
+        console.log("Risposta del server:", response.data);
+        setIsAdmin(response.data.role === "admin");
+        setUsername(response.data.username);
+        setIsLoggedIn(true);
+      })
+      .catch((err) => {
+        console.error("Errore nel recupero dei dati dell'utente:", err);
+        setIsAdmin(false);
+        setIsLoggedIn(false);
+      });
+  }, [token]);
 
   useEffect(() => {
     console.log("isAdmin cambiato a:", isAdmin);
@@ -150,50 +126,91 @@ useEffect(() => {
     };
   }, []);
 
-  const getMenuItems = () => {
-    const items = [
-      {
+  const getMenuItems = useMemo(() => {
+    let items = [];
+
+    if (!isAdmin) {
+      // Aggiungi "Home" solo se non sei in modalità admin
+      items.push({
         key: "1",
         icon: <HomeOutlined style={{ fontSize: 20 }} />,
         label: "Home",
-        onClick: () => handleNavigation("/"),
+        onClick: () => handleMenuClick("1", "/"),
         style: {
           fontSize: 16,
           fontWeight: "500",
           color: "#FFFFFF",
-          backgroundColor: "#B871F7",
+          backgroundColor: selectedKey === "1" ? "#8A2BE2" : "transparent", // Solo se selezionato
           borderRadius: "8px",
           transition: "background-color 0.3s",
         },
-        onMouseEnter: (e) => {
-          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
-        },
-        onMouseLeave: (e) => {
-          e.target.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
-        },
-      },
-    ];
+      });
+    }
 
     if (isAdmin) {
+      // Aggiungi gli altri menu per l'admin
       items.push(
         {
-          key: "5",
-          icon: <UserOutlined style={{ fontSize: 20 }} />,
-          label: "Gestione Utenti",
-          onClick: () => handleNavigation("gestione-utenti"),
+          key: "2",
+          icon: <DashboardOutlined style={{ fontSize: 20 }} />,
+          label: "Dashboard",
+          onClick: () => handleMenuClick("2", "adminDashboard"),
+          style: {
+            fontSize: 16,
+            fontWeight: "500",
+            color: "#FFFFFF",
+            backgroundColor: selectedKey === "2" ? "#8A2BE2" : "transparent", // Solo se selezionato
+            borderRadius: "8px",
+            transition: "background-color 0.3s",
+          },
         },
         {
-          key: "6",
+          key: "3",
+          icon: <UserOutlined style={{ fontSize: 20 }} />,
+          label: "Gestione Utenti",
+          onClick: () => handleMenuClick("3", "gestione-utenti"),
+          style: {
+            fontSize: 16,
+            fontWeight: "500",
+            color: "#FFFFFF",
+            backgroundColor: selectedKey === "3" ? "#8A2BE2" : "transparent", // Solo se selezionato
+            borderRadius: "8px",
+            transition: "background-color 0.3s",
+          },
+        },
+        {
+          key: "4",
           icon: <TrophyOutlined style={{ fontSize: 20 }} />,
           label: "Gestione Tornei",
-          onClick: () => handleNavigation("gestione-tornei"),
+          onClick: () => handleMenuClick("4", "gestione-tornei"),
+          style: {
+            fontSize: 16,
+            fontWeight: "500",
+            color: "#FFFFFF",
+            backgroundColor: selectedKey === "4" ? "#8A2BE2" : "transparent", // Solo se selezionato
+            borderRadius: "8px",
+            transition: "background-color 0.3s",
+          },
+        },
+        {
+          key: "5",
+          icon: <TeamOutlined style={{ fontSize: 20 }} />,
+          label: "Teams",
+          onClick: () => handleMenuClick("5", "teams"),
+          style: {
+            fontSize: 16,
+            fontWeight: "500",
+            color: "#FFFFFF",
+            backgroundColor: selectedKey === "5" ? "#8A2BE2" : "transparent", // Solo se selezionato
+            borderRadius: "8px",
+            transition: "background-color 0.3s",
+          },
         }
       );
     }
 
     return items;
-  };
-
+  }, [selectedKey, isAdmin]);
 
   const handleRegister = async (values) => {
     try {
@@ -206,7 +223,9 @@ useEffect(() => {
       message.success(response.data.message);
       setIsModalVisible(false);
     } catch (error) {
-      message.error(error.response?.data?.error || "Errore nella registrazione.");
+      message.error(
+        error.response?.data?.error || "Errore nella registrazione."
+      );
     }
   };
 
@@ -235,132 +254,7 @@ useEffect(() => {
     }
   };
 
-  const tabsItems = [
-    {
-      label: "Login",
-      key: "login",
-      children: (
-        <>
-          <Form
-            name="login"
-            initialValues={{ remember: true }}
-            onFinish={handleLogin}
-            layout="vertical"
-          >
-            <Form.Item
-              name="email"
-              rules={[
-                {
-                  required: true,
-                  message: "Per favore inserisci la tua email!",
-                },
-              ]}
-            >
-              <Input prefix={<UserOutlined />} placeholder="Email" />
-            </Form.Item>
-
-            <Form.Item
-              name="password"
-              rules={[
-                {
-                  required: true,
-                  message: "Per favore inserisci la tua password!",
-                },
-              ]}
-            >
-              <Input.Password prefix={<LockOutlined />} placeholder="Password" />
-            </Form.Item>
-
-            <Form.Item>
-              <Button type="primary" block htmlType="submit">
-                Login
-              </Button>
-            </Form.Item>
-          </Form>
-
-          <Divider />
-
-          <a href="/forgot-password">Dimenticata la password?</a>
-        </>
-      ),
-    },
-    {
-      label: "Registrazione",
-      key: "register",
-      children: (
-        <>
-          <Form
-            name="register"
-            initialValues={{ remember: true }}
-            onFinish={handleRegister}
-            layout="vertical"
-          >
-            <Form.Item
-              name="email"
-              rules={[
-                {
-                  required: true,
-                  message: "Per favore inserisci la tua email!",
-                },
-              ]}
-            >
-              <Input prefix={<UserOutlined />} placeholder="Email" />
-            </Form.Item>
-
-            <Form.Item
-              name="username"
-              rules={[
-                {
-                  required: true,
-                  message: "Per favore inserisci il tuo username!",
-                },
-              ]}
-            >
-              <Input prefix={<UserOutlined />} placeholder="Username" />
-            </Form.Item>
-
-            <Form.Item
-              name="password"
-              rules={[
-                {
-                  required: true,
-                  message: "Per favore inserisci una password!",
-                },
-              ]}
-            >
-              <Input.Password prefix={<LockOutlined />} placeholder="Password" />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              rules={[
-                {
-                  required: true,
-                  message: "Per favore conferma la tua password!",
-                },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue("password") === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject("Le password non corrispondono!");
-                  },
-                }),
-              ]}
-            >
-              <Input.Password prefix={<LockOutlined />} placeholder="Conferma Password" />
-            </Form.Item>
-
-            <Form.Item>
-              <Button type="primary" block htmlType="submit">
-                Registrati
-              </Button>
-            </Form.Item>
-          </Form>
-        </>
-      ),
-    },
-  ];
+  
 
   return (
     <>
@@ -383,15 +277,15 @@ useEffect(() => {
         <Menu
           theme="dark"
           mode="inline"
-          defaultSelectedKeys={["1"]}
-          items={getMenuItems()}
+          selectedKeys={[selectedKey]}
+          items={getMenuItems}
           style={{
             display: "flex",
             flexDirection: "column",
             gap: "15px",
             borderRight: 0,
             backgroundColor: "#0F0E17",
-            padding:5
+            padding: 5,
           }}
         />
         <div
@@ -406,7 +300,7 @@ useEffect(() => {
             display: "flex",
             flexDirection: collapsed ? "column" : "row",
             alignItems: "center",
-            justifyContent:"center",
+            justifyContent: "center",
             gap: "40px",
           }}
         >
@@ -424,7 +318,7 @@ useEffect(() => {
             rel="noopener noreferrer"
             style={{ color: "white", fontSize: "20px" }}
           >
-            <XOutlined style={{color:"#fff"}} />
+            <XOutlined style={{ color: "#fff" }} />
           </a>
           <a
             href="https://www.instagram.com/egamex.eu/"
@@ -436,19 +330,7 @@ useEffect(() => {
           </a>
         </div>
 
-        <Modal
-          title="Accedi o Registrati"
-          visible={isModalVisible}
-          onCancel={handleCancel}
-          footer={null}
-          width={400}
-        >
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            items={tabsItems}
-          />
-        </Modal>
+        
       </Sider>
     </>
   );
