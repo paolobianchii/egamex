@@ -14,7 +14,8 @@ const NodeCache = require("node-cache");
 const roleRouter = require('./routes/users');
 const session = require("express-session");
 const path = require("path");
-
+const helmet = require("helmet");
+const xss = require("xss-clean");
 
 
 dotenv.config(); // Carica le variabili d'ambiente
@@ -24,6 +25,9 @@ const supUrl = process.env.SUPABASE_URL; // Corretto
 const supAnonKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Aggiunto per coerenza
 
 const app = express();
+// Middleware di sicurezza
+app.use(helmet()); // Protegge dagli attacchi comuni basati su intestazioni HTTP
+app.use(xss()); // Pulisce input dannosi da XSS
 
 app.use(bodyParser.json());
 app.use(cors());

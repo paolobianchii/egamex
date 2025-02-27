@@ -263,7 +263,7 @@ const GestioneTornei = () => {
             marginBottom: 30,
           }}
         >
-          <h1 style={{ color: "#fff" }}>Gestione Tornei</h1>
+          <h1 style={{ color: "#fff" }}>Tornei</h1>
 
 
               <Button type="primary" onClick={() => setCreatingTournament(true)} style={{ float: "left", marginBottom: 10 }}>

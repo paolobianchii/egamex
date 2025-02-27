@@ -410,7 +410,7 @@ const handleIscrizione = () => {
                       display: "flex",
                       justifyContent: "center",
                       alignItems: "center",
-                      zIndex: 9999,
+                      zIndex: -2,
                     }}
                   >
                     <h2 style={{ color: "#fff", fontSize: "24px" }}>

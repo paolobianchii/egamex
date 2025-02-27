@@ -16,6 +16,8 @@ import { UserOutlined, LockOutlined, UserAddOutlined, DiscordOutlined, LoginOutl
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../styles/Navbar.css";
+import DOMPurify from "dompurify";
+
 
 const { Header } = Layout;
 const { TabPane } = Tabs;
@@ -129,7 +131,7 @@ const Navbar = () => {
     setLoading(true);
     try {
       const response = await axios.post(`${apiUrl}/api/login`, {
-        email: values.email,
+        email: DOMPurify.sanitize(values.email),
         password: values.password,
       });
   
@@ -167,9 +169,10 @@ const Navbar = () => {
     setLoading(true); // Inizia il caricamento
     try {
       const response = await axios.post(`${apiUrl}/api/register`, {
-        email: values.email,
+        email: DOMPurify.sanitize(values.email),
         password: values.password,
-        username: values.username,
+        username: DOMPurify.sanitize(values.username),
+        
       });
       message.success(response.data.message);
       hideLoginModal(); // Chiudi la modale dopo la registrazione

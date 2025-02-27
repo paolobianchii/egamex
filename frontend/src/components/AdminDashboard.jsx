@@ -4,6 +4,24 @@ import { Link } from "react-router-dom";
 
 const { Content } = Layout;
 
+
+// **Stile personalizzato per i bottoni**
+const buttonStyle = {
+  marginTop: 16,
+  background: "linear-gradient(135deg, #ff7eb3, #ff758c)", 
+  border: "none",
+  color: "#fff",
+  fontWeight: "bold",
+  padding: "10px 20px",
+  fontSize: "16px",
+  borderRadius: "8px",
+  transition: "all 0.3s ease",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  cursor: "pointer",
+};
+
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [tournaments, setTournaments] = useState([]);
@@ -45,7 +63,7 @@ const AdminDashboard = () => {
             marginBottom: 30,
           }}
         >
-          <h1 style={{ color: "#fff" }}>Benvenuto nell'Admin Dashboard</h1>
+          <h1 style={{ color: "#fff" }}>Dashboard</h1>
 
           {/* Sezione con le card */}
           <Row gutter={16}>
@@ -58,8 +76,14 @@ const AdminDashboard = () => {
                 style={{
                   backgroundColor: "#8a2be2", // Viola
                   borderRadius: 10,
+                  color:"#fff",
                   boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
                   marginBottom: 16, // Aggiunto margine tra le card
+                }}
+                headStyle={{
+                  color: "#fff", // Colore testo del titolo
+                  fontWeight: "bold",
+                  fontSize: "18px",
                 }}
               >
                 <Link to="/gestione-tornei" style={{ color: 'white', textDecoration: 'none' }}>
@@ -67,12 +91,7 @@ const AdminDashboard = () => {
                     value={totalTournaments} 
                     valueStyle={{ fontSize: '32px', color: '#ffffff' }} // Font-size più grande e colore del testo bianco
                   />
-                  <Button
-                    type="primary"
-                    style={{ marginTop: 16, width: "100%" }}
-                  >
-                    Vai alla gestione tornei
-                  </Button>
+
                 </Link>
               </Card>
             </Col>
@@ -88,18 +107,17 @@ const AdminDashboard = () => {
                   boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
                   marginBottom: 16, // Aggiunto margine tra le card
                 }}
+                headStyle={{
+                  color: "#fff", // Colore testo del titolo
+                  fontWeight: "bold",
+                  fontSize: "18px",
+                }}
               >
                 <Statistic 
                   value={gamesCount} 
                   valueStyle={{ fontSize: '32px', color: '#ffffff' }} // Font-size più grande e colore del testo bianco
                 />
-                <Button
-                  type="primary"
-                  style={{ marginTop: 16, width: "100%" }}
-                  onClick={() => console.log('Vai alla gestione giochi')} // Aggiungi il link appropriato
-                >
-                  Vai alla gestione giochi
-                </Button>
+
               </Card>
             </Col>
             <Col
@@ -113,18 +131,18 @@ const AdminDashboard = () => {
                   borderRadius: 10,
                   boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
                 }}
+                headStyle={{
+                  color: "#fff", // Colore testo del titolo
+                  fontWeight: "bold",
+                  fontSize: "18px",
+                }}
               >
+                
+                <Link to="/utenti" style={{ color: 'white', textDecoration: 'none' }}>
                 <Statistic 
                   value={totalUsers} 
                   valueStyle={{ fontSize: '32px', color: '#ffffff' }} // Font-size più grande e colore del testo bianco
                 />
-                <Link to="/gestione-utenti" style={{ color: 'white', textDecoration: 'none' }}>
-                  <Button
-                    type="primary"
-                    style={{ marginTop: 16, width: "100%" }}
-                  >
-                    Vai alla gestione utenti
-                  </Button>
                 </Link>
               </Card>
             </Col>

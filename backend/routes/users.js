@@ -3,7 +3,12 @@ const { supabase } = require("../lib/supabase");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
+
+
 const router = express.Router();
+
+
+const saltRounds = 10; // Numero di cicli per l'hashing della password
 
 // 1️⃣ Ottieni tutti gli utenti
 router.get("/", async (req, res) => {
@@ -83,8 +88,7 @@ router.post("/register", async (req, res) => {
   }
 
   try {
-    // Prima verifica se l'utente esiste già nella tabella users
-    const { data: existingUser, error: checkError } = await supabase
+    const { data: existingUser } = await supabase
       .from("users")
       .select("email")
       .eq("email", email)
@@ -94,24 +98,8 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Un utente con questa email esiste già" });
     }
 
-    // Verifica anche in Supabase Auth
-    const { data: existingAuth, error: authCheckError } = await supabase.auth.admin.listUsers({
-      filter: { email }
-    });
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    if (existingAuth && existingAuth.users && existingAuth.users.length > 0) {
-      // Utente esiste in Auth ma non nella tabella users - caso anomalo
-      // Possiamo gestirlo in uno dei due modi:
-      // 1. Eliminare l'utente da Auth e ricrearlo
-      const userId = existingAuth.users[0].id;
-      await supabase.auth.admin.deleteUser(userId);
-      
-      // Oppure
-      // 2. Usare l'ID esistente per creare il record nella tabella users
-      // In questo caso scelgo di eliminare e ricreare per pulizia
-    }
-
-    // Crea un nuovo utente in Supabase Authentication
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -121,20 +109,19 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: signUpError.message });
     }
 
-    // Verifica che abbiamo ricevuto i dati dell'utente
     if (!authData || !authData.user || !authData.user.id) {
-      return res.status(500).json({ error: "Errore durante la registrazione: dati utente non ricevuti da Supabase Auth" });
+      return res.status(500).json({ error: "Errore durante la registrazione" });
     }
 
     const userId = authData.user.id;
     console.log("Utente creato in Auth con ID:", userId);
 
-    // Salva l'utente nel database con il ruolo
     const userData = { 
       id: userId, 
       username, 
       email,
-      role: role || 'user' // Imposta un ruolo predefinito se non specificato
+      password: hashedPassword,
+      role: role || 'user'
     };
 
     const { data: insertedUser, error: insertError } = await supabase
@@ -143,13 +130,10 @@ router.post("/register", async (req, res) => {
       .select();
 
     if (insertError) {
-      // Se c'è un errore nell'inserimento, elimina l'utente da Auth per mantenere la coerenza
-      console.error("Errore nell'inserimento dell'utente nel DB:", insertError.message);
       await supabase.auth.admin.deleteUser(userId);
-      return res.status(500).json({ error: "Errore nell'inserimento dell'utente: " + insertError.message });
+      return res.status(500).json({ error: "Errore nell'inserimento dell'utente" });
     }
 
-    // Conferma la registrazione e restituisce i dati dell'utente
     res.status(201).json({ 
       message: "Utente registrato con successo", 
       user: {
@@ -161,7 +145,7 @@ router.post("/register", async (req, res) => {
     });
   } catch (error) {
     console.error("Errore registrazione:", error);
-    res.status(500).json({ error: "Errore durante la registrazione: " + (error.message || "Errore sconosciuto") });
+    res.status(500).json({ error: "Errore durante la registrazione" });
   }
 });
 
@@ -174,34 +158,24 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    // Effettua il login con Supabase Authentication
-    const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (loginError || !authData.user) {
-      return res.status(400).json({ error: "Credenziali non valide." });
-    }
-
-    const userId = authData.user.id;
-    console.log("UserID from Supabase Authentication:", userId);
-
-    // Recupera informazioni aggiuntive dal database
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("username, email, role")
-      .eq("id", userId)
+      .select("id, username, email, password, role")
+      .eq("email", email)
       .single();
 
     if (userError || !userData) {
-      return res.status(500).json({ error: "Errore nel recupero dei dati utente." });
+      return res.status(400).json({ error: "Credenziali non valide." });
     }
 
-    // Genera il token JWT
+    const passwordMatch = await bcrypt.compare(password, userData.password);
+    if (!passwordMatch) {
+      return res.status(400).json({ error: "Credenziali non valide." });
+    }
+
     const token = jwt.sign(
       { 
-        userId, 
+        userId: userData.id, 
         email: userData.email, 
         username: userData.username,
         role: userData.role 
@@ -212,7 +186,12 @@ router.post("/login", async (req, res) => {
 
     res.json({
       message: "Login effettuato con successo!",
-      user: userData,
+      user: {
+        id: userData.id,
+        username: userData.username,
+        email: userData.email,
+        role: userData.role
+      },
       token,
     });
   } catch (error) {

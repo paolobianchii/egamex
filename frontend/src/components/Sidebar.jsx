@@ -167,7 +167,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         {
           key: "3",
           icon: <UserOutlined style={{ fontSize: 20 }} />,
-          label: "Gestione Utenti",
+          label: "Utenti",
           onClick: () => handleMenuClick("3", "gestione-utenti"),
           style: {
             fontSize: 16,
@@ -181,7 +181,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         {
           key: "4",
           icon: <TrophyOutlined style={{ fontSize: 20 }} />,
-          label: "Gestione Tornei",
+          label: "Tornei",
           onClick: () => handleMenuClick("4", "gestione-tornei"),
           style: {
             fontSize: 16,

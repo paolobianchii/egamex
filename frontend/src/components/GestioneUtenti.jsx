@@ -52,7 +52,7 @@ const GestioneUtenti = () => {
             marginBottom: 30,
           }}
         >
-          <h1 style={{ color: "#fff" }}>Gestione Utenti</h1>
+          <h1 style={{ color: "#fff" }}>Utenti</h1>
 
 
           <Table
