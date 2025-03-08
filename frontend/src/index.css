@@ -51,6 +51,81 @@
   color: #fff !important; /* Colore dell'icona */
 }
 
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.no-tournaments {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+  margin-top: 30px;
+}
+
+
+.card-title {
+  font-weight: 700;
+  font-size: 18px;
+  color: #282828;
+}
+
+.badge-container {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+
+.badge-text {
+  background-color: #ff4d4f;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.badge-modalita {
+  background-color: #282828;
+  color: white;
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.torneo-date {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.date-text {
+  font-size: 11px;
+}
+
+.participate-button {
+  width: 100%;
+}
+
+
 
 /* Modale con sfondo scuro, bordi arrotondati e ombra */
 .custom-modal .ant-modal-content {

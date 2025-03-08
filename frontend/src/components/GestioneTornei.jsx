@@ -163,23 +163,30 @@ const GestioneTornei = () => {
           message.error("I campi 'titolo', 'modalita' e 'data' sono obbligatori.");
           return;
         }
-
-        const formData = new FormData();
-        formData.append("titolo", values.titolo);
-        formData.append("modalita", values.modalita);
-        formData.append("data", values.data);
-
-        if (values.image && values.image[0]) {
-          formData.append("image", values.image[0].originFileObj);
-        }
-
+  
+        // Usa l'URL dell'immagine o uno predefinito
+        const imageUrl = values.image && values.image[0] ? values.image[0].url : "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG";
+  
+        const tournamentData = {
+          titolo: values.titolo,
+          modalita: values.modalita,
+          data: values.data,
+          imageUrl: imageUrl, // Aggiungi l'URL dell'immagine
+        };
+  
         try {
-          const response = await fetch(`${apiUrl}/api/tournaments`, { method: "POST", body: formData });
-
+          const response = await fetch(`${apiUrl}/api/tournaments`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(tournamentData),
+          });
+  
           if (!response.ok) {
             throw new Error("Errore nella creazione del torneo");
           }
-
+  
           message.success("Torneo creato!");
           setCreatingTournament(false);
           form.resetFields();
@@ -193,6 +200,7 @@ const GestioneTornei = () => {
         message.error("Compila tutti i campi correttamente.");
       });
   };
+  
 
   // Columns for tables
   const userColumns = [
@@ -241,10 +249,19 @@ const GestioneTornei = () => {
       key: "image",
       render: (image) => (
         <div className="flex justify-center">
-          <img src={`${apiUrl}${image}`} alt="Tournament" className="w-12 h-12 object-cover rounded-full" />
+          <img
+            src={image ? `${image}` : "https://www.smaroadsafety.com/wp-content/uploads/2022/06/no-pic.png"} // Imposta un'immagine di fallback se l'URL è vuoto o non valido
+            alt="Tournament"
+            style={{
+              height: 70, // Imposta anche l'altezza al 100% per fare in modo che riempia l'area
+              objectFit: "cover", // Garantisce che l'immagine non distorca
+            }}
+            className="rounded-full" // Mantiene la forma rotonda
+          />
         </div>
       ),
     },
+    
     {
       title: "Azioni",
       key: "action",
@@ -328,11 +345,7 @@ const GestioneTornei = () => {
               <Form.Item name="modalita" label="Modalità" rules={[{ required: true, message: "Inserisci la modalità!" }]}>
                 <Input />
               </Form.Item>
-              <Form.Item name="image" label="Immagine" valuePropName="fileList" getValueFromEvent={(e) => e?.fileList || []}>
-                <Upload name="image" listType="picture" beforeUpload={() => false} onChange={handleChange}>
-                  <Button icon={<UploadOutlined />}>Carica immagine</Button>
-                </Upload>
-              </Form.Item>
+
             </Form>
           </Modal>
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Popconfirm, message, Layout, Table, Input } from "antd";
+import { Button, Popconfirm, message, Layout, Table, Input, Avatar } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 const { Content } = Layout;
 
@@ -46,6 +46,20 @@ const GestioneUtenti = () => {
   };
 
   const userColumns = [
+    {
+      title: "Avatar", // Titolo della colonna per l'avatar
+      dataIndex: "avatar", // Nome del campo nell'oggetto utente per l'avatar
+      key: "avatar",
+      render: (avatar) => (
+        <div className="flex justify-center items-center">
+          <Avatar
+            src={avatar ? avatar : "https://cdn3d.iconscout.com/3d/premium/thumb/astronaut-3d-illustration-download-in-png-blend-fbx-gltf-file-formats--space-astronomy-spaceman-avatar-pack-people-illustrations-4715127.png"} // URL immagine di fallback
+            size="large" // Imposta la dimensione dell'avatar
+            style={{ cursor: "pointer", marginRight: 10 }} // Stile per l'avatar
+          />
+        </div>
+      ),
+    },
     { title: "Username", dataIndex: "username", key: "username" },
     { title: "Email", dataIndex: "email", key: "email" },
     { title: "Punteggio", dataIndex: "punteggio", key: "punteggio" },

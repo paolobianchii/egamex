@@ -248,7 +248,7 @@ const handleDiscordLogin = async () => {
                 <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
 
             <Avatar
-              src="https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg"
+              src="https://cdn3d.iconscout.com/3d/premium/thumb/astronaut-3d-illustration-download-in-png-blend-fbx-gltf-file-formats--space-astronomy-spaceman-avatar-pack-people-illustrations-4715127.png"
               size="large"
               style={{ cursor: "pointer", marginRight:10 }}
             />

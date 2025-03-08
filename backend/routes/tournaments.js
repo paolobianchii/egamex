@@ -5,6 +5,7 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
+
 const router = express.Router();
 const cache = new NodeCache({ stdTTL: 60 }); // Cache con TTL di 60 secondi
 
@@ -24,7 +25,19 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error("Solo immagini JPG, PNG o GIF sono consentite"));
+    }
+    cb(null, true);
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Limite di 5MB per immagine
+  }
+});
 
 // Middleware per caching con NodeCache
 const cacheMiddleware = (req, res, next) => {
@@ -64,27 +77,23 @@ router.get("/", cacheMiddleware, async (req, res) => {
 });
 
 
-// Route per creare un torneo con immagine locale
-router.post("/", upload.single("image"), async (req, res) => {
-  const { titolo, modalita, data } = req.body;
-  const imageFile = req.file;
+router.post("/", async (req, res) => {
+  const { titolo, modalita, data, imageUrl } = req.body;
 
   if (!titolo || !modalita || !data) {
     return res.status(400).json({ error: "I campi 'titolo', 'modalita' e 'data' sono obbligatori" });
   }
 
   try {
-    let imageUrl = null;
-    if (imageFile) {
-      imageUrl = `/uploads/${imageFile.filename}`; // Percorso locale dell'immagine
-    }
+    // Usa un URL di immagine predefinito se non viene fornito alcun URL
+    const image = imageUrl || "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG";
 
     const { data: insertedData, error } = await supabase.from("tornei").insert([
       {
         titolo,
         modalita,
         data,
-        image: imageUrl,
+        image: image,  // Salva l'URL dell'immagine nel database
       },
     ]).select();
 
@@ -100,6 +109,7 @@ router.post("/", upload.single("image"), async (req, res) => {
     res.status(500).json({ error: "Errore interno del server" });
   }
 });
+
 
 // Route per modificare un torneo con gestione file locale
 router.put("/:id", upload.single("image"), async (req, res) => {

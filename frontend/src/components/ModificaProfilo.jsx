@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Form, Input, Button, message, Card, Upload, Avatar, Divider } from "antd";
-import { UserOutlined, MailOutlined, LockOutlined, UploadOutlined, HomeOutlined } from "@ant-design/icons";
+import { UserOutlined, UploadOutlined, HomeOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 
-const DEFAULT_AVATAR = "https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg";
+const DEFAULT_AVATAR = "https://cdn3d.iconscout.com/3d/premium/thumb/astronaut-3d-illustration-download-in-png-blend-fbx-gltf-file-formats--space-astronomy-spaceman-avatar-pack-people-illustrations-4715127.png";
 
 const ModificaProfilo = () => {
   const [form] = Form.useForm();
@@ -12,16 +12,18 @@ const ModificaProfilo = () => {
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
   const [loading, setLoading] = useState(false);
+  const [fileList, setFileList] = useState([]);
+  const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR); // Stato per gestire l'URL dell'avatar
+  const [isUsernameChanged, setIsUsernameChanged] = useState(false);
 
   const { username = "", email = "", id = "", role = "", avatar = "", created_at = "" } = location.state || {};
-  const [initialData, setInitialData] = useState({ 
-    username, 
-    email, 
-    role, 
+  const [initialData, setInitialData] = useState({
+    username,
+    email,
+    role,
     avatarUrl: avatar || DEFAULT_AVATAR,
     createdAt: created_at
   });
-  const [fileList, setFileList] = useState([]);
 
   useEffect(() => {
     if (username && email !== null) {
@@ -38,42 +40,55 @@ const ModificaProfilo = () => {
         avatarUrl: avatar || DEFAULT_AVATAR,
         createdAt: created_at
       });
+      setAvatarUrl(avatar || DEFAULT_AVATAR);
     }
   }, [form, username, email, role, avatar, created_at]);
+
+  const handleAvatarChange = (info) => {
+    console.log("File selezionato:", info.file);
+    if (info.file.status === 'done') {
+      setAvatarUrl(info.file.response.url); 
+      message.success("Avatar caricato con successo");
+    } else if (info.file.status === 'error') {
+      message.error("Errore nel caricare l'avatar");
+    }
+    setFileList(info.fileList);
+  };
+  
 
   const handleUpdateProfile = async () => {
     setLoading(true);
     const user = JSON.parse(localStorage.getItem("user"));
     const userId = user ? user.id : null;
-  
+
     if (!userId) {
       message.error("ID utente non trovato");
       setLoading(false);
       return;
     }
-  
+
     try {
       const response = await axios.put(`${apiUrl}/api/users/${userId}`, {
         username: form.getFieldValue("username"),
         email: form.getFieldValue("email"),
-        avatar: initialData.avatarUrl,
+        avatar: avatarUrl, // Usa l'avatar appena caricato
         password: form.getFieldValue("password") || undefined,
       });
-  
+
       message.success("Profilo aggiornato con successo");
-  
+
       // Aggiorna il localStorage con i nuovi dati
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
       }
-  
+
       const updatedUser = { 
         ...JSON.parse(localStorage.getItem("user")), 
         ...response.data.user 
       };
-  
+
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      
+
       // Aggiornamento completo delle informazioni visualizzate
       setInitialData({
         ...initialData,
@@ -85,39 +100,15 @@ const ModificaProfilo = () => {
       console.error("Errore durante l'aggiornamento", error);
       message.error("Errore durante l'aggiornamento del profilo");
     } finally {
-      window.location.reload();
       setLoading(false);
-      
     }
   };
-  
-  const handleAvatarChange = (info) => {
-    if (info.file.status === 'done') {
-      setInitialData({ ...initialData, avatarUrl: info.file.response.url });
-      message.success("Avatar caricato con successo");
-    } else if (info.file.status === 'error') {
-      message.error("Errore nel caricare l'avatar");
-    }
-    setFileList(info.fileList);
+
+  // Funzione che gestisce il cambiamento dell'username
+  const handleUsernameChange = (e) => {
+    const newUsername = e.target.value;
+    setIsUsernameChanged(newUsername !== initialData.username); // Controlla se l'username è cambiato
   };
-
-  const handleResetAvatar = () => {
-    setInitialData({ ...initialData, avatarUrl: DEFAULT_AVATAR });
-    setFileList([]);
-    message.success("Avatar reimpostato");
-  };
-
-// Funzione per formattare il timestamp in "Mese Anno"
-const formatDate = (timestamp) => {
-  const date = new Date(timestamp); // Crea un oggetto Date dal timestamp
-  if (isNaN(date)) {
-    // Se la data non è valida, restituisci un messaggio predefinito
-    return "Data non valida";
-  }
-  const options = { year: "numeric", month: "long" }; // Mese e anno
-  return date.toLocaleDateString("it-IT", options); // Formattazione in italiano
-};
-
 
   return (
     <div className="bg-gradient-to-r from-indigo-900 to-purple-900 min-h-screen ">
@@ -132,35 +123,37 @@ const formatDate = (timestamp) => {
               <div className="relative mb-8 mx-auto">
                 <Avatar 
                   size={128} 
-                  src={initialData.avatarUrl} 
+                  src={avatarUrl} 
                   alt="Avatar utente"
                   style={{marginTop:70}}
                   className="border-4 border-white shadow-lg"
                 />
-                <Upload
-                  action="/upload"
-                  showUploadList={false}
-                  fileList={fileList}
-                  onChange={handleAvatarChange}
-                  beforeUpload={() => false}
-                >
-                  <Button 
-                    type="primary" 
-                    shape="circle" 
-                    icon={<UploadOutlined />} 
-                    size="large"
-                    className="absolute bottom-0 right-0 bg-blue-500"
-                  />
-                </Upload>
+<Upload
+  action={`${apiUrl}/upload`}
+  headers={{
+    Authorization: `Bearer ${localStorage.getItem("token")}` // Se usi un token di autenticazione
+  }}
+  showUploadList={false}
+  fileList={fileList}
+  onChange={handleAvatarChange}
+  beforeUpload={() => false} 
+>
+  <Button 
+    type="primary" 
+    shape="circle" 
+    icon={<UploadOutlined />} 
+    size="large"
+    className="absolute bottom-0 right-0 bg-blue-500"
+  />
+</Upload>
+
+
               </div>
               
               <h3 className="text-xl font-bold text-white mb-1" style={{marginTop:20}}>{initialData.username}</h3>
               <p className="text-indigo-200 mb-6">{initialData.email}</p>
               
-              
               <Divider className="border-indigo-400" />
-
-
             </div>
             
             {/* Area Contenuto Principale */}
@@ -188,9 +181,10 @@ const formatDate = (timestamp) => {
                     prefix={<UserOutlined className="text-gray-400" />} 
                     placeholder="Username"
                     size="large"
+                    onChange={handleUsernameChange} // Aggiungi la gestione del cambiamento dell'username
+
                   />
                 </Form.Item>
-                
                 
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-10 pt-4">
                   <Button 
@@ -200,6 +194,8 @@ const formatDate = (timestamp) => {
                     size="large"
                     loading={loading}
                     block
+                    disabled={!isUsernameChanged} // Disabilita il pulsante se l'username non è stato cambiato
+
                   >
                     Salva Modifiche
                   </Button>

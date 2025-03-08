@@ -11,6 +11,7 @@ import {
   Table,
   Switch,
   notification,
+  Spin,
 } from "antd";
 import axios from "axios";
 import { CalendarOutlined } from "@ant-design/icons"; // Importa l'icona
@@ -18,6 +19,7 @@ import debounce from "lodash.debounce"; // Importa il debounce
 import { Breadcrumb } from "antd";
 import { HomeOutlined } from "@ant-design/icons";
 import Footer from "./Footer";
+import imgTorneo from "../assets/torneoImage.png";
 
 const { Meta } = Card;
 
@@ -64,13 +66,13 @@ const Home = () => {
 
   const fetchTournaments = async () => {
     try {
-      setLoading(true);
+      setLoading(true); // Avvia il loading quando si inizia a caricare i tornei
       const response = await axios.get(`${apiUrl}/api/tournaments`);
-      setTornei(response.data);
+      setTornei(response.data); // Imposta i tornei quando sono stati recuperati
     } catch (error) {
       console.error("Errore nel recupero dei tornei:", error);
     } finally {
-      setLoading(false);
+      setLoading(false); // Ferma il loading una volta che i dati sono stati caricati
     }
   };
   
@@ -331,6 +333,8 @@ const handleIscrizione = () => {
     return `${diffDays} giorni ${diffHours}h ${diffMinutes}m`;
   };
 
+  
+
   return (
     <div
       style={{
@@ -528,13 +532,17 @@ const handleIscrizione = () => {
                       zIndex: -2,
                     }}
                   >
-                    <h2 style={{ color: "#fff", fontSize: "24px" }}>
-                      Caricamento tornei...
-                    </h2>
+                    <div className="loading-spinner">
+    <Spin size="large" />
+    <span>Caricamento tornei...</span>
+  </div>
                   </div>
                 )}
                 {loading ? (
-                  <p>Loading tornei...</p>
+                  <div className="loading-spinner">
+    <Spin size="large" />
+    <span>Loading tornei...</span>
+  </div>                  
                 ) : inCorsoTornei.length > 0 ? (
                   inCorsoTornei.map((torneo) => (
                     <Col span={24} sm={12} md={18} lg={12} key={torneo.id}>
@@ -544,8 +552,8 @@ const handleIscrizione = () => {
                         cover={
                           <img
                             alt={torneo.titolo}
-                            src={`${apiUrl}${torneo.image}`}
-                            style={{ height: "200px", objectFit: "cover" }}
+                            src={torneo.image || "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG"} // Default image URL
+                            style={{ height: "150px", objectFit: "cover" }}
                           />
                         }
                         
@@ -712,8 +720,8 @@ const handleIscrizione = () => {
                         cover={
                           <img
                             alt={torneo.titolo}
-                            src={`${apiUrl}${torneo.image}`}
-                            style={{ height: "200px", objectFit: "cover" }}
+                            src={torneo.image || "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG"} // Default image URL
+                            style={{ height: "150px", objectFit: "cover" }}
                           />
                         }
                         
