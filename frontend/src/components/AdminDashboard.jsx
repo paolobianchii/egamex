@@ -138,7 +138,7 @@ const AdminDashboard = () => {
                 }}
               >
                 
-                <Link to="/utenti" style={{ color: 'white', textDecoration: 'none' }}>
+                <Link to="/gestione-utenti" style={{ color: 'white', textDecoration: 'none' }}>
                 <Statistic 
                   value={totalUsers} 
                   valueStyle={{ fontSize: '32px', color: '#ffffff' }} // Font-size più grande e colore del testo bianco

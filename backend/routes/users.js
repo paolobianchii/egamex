@@ -274,25 +274,45 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    // Prima elimina l'utente da Supabase Auth
+    console.log(`Eliminazione richiesta per l'utente con ID: ${id}`);
+
+    // Verifica che l'utente esista
+    const { data: userData, error: fetchUserError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", id)
+      .single();
+
+    if (fetchUserError || !userData) {
+      console.log("Utente non trovato:", fetchUserError);
+      return res.status(404).json({ error: "Utente non trovato." });
+    }
+
+    // Elimina l'utente da Supabase Auth
+    console.log("Eliminazione dell'utente da Supabase Auth...");
     const { error: authDeleteError } = await supabase.auth.admin.deleteUser(id);
-    
     if (authDeleteError) {
-      return res.status(500).json({ error: "Errore durante l'eliminazione dell'autenticazione: " + authDeleteError.message });
+      console.log("Errore durante l'eliminazione da Supabase Auth:", authDeleteError);
+      return res.status(500).json({ error: "Errore durante l'eliminazione dall'autenticazione: " + authDeleteError.message });
     }
 
-    // Poi elimina l'utente dalla tabella users
+    // Elimina l'utente dalla tabella 'users'
+    console.log("Eliminazione dell'utente dalla tabella 'users'...");
     const { error } = await supabase.from("users").delete().eq("id", id);
-
     if (error) {
-      return res.status(500).json({ error: error.message });
+      console.log("Errore durante l'eliminazione dalla tabella 'users':", error);
+      return res.status(500).json({ error: "Errore durante l'eliminazione dall'utente: " + error.message });
     }
 
+    // Risposta positiva dopo che entrambe le operazioni sono state completate
+    console.log("Utente eliminato con successo.");
     res.json({ message: "Utente eliminato con successo" });
   } catch (error) {
-    console.error("Errore eliminazione:", error.message);
-    res.status(500).json({ error: "Errore durante l'eliminazione dell'utente" });
+    console.error("Errore durante l'eliminazione dell'utente:", error.message);
+    res.status(500).json({ error: "Errore interno durante l'eliminazione dell'utente." });
   }
 });
+
+
 
 module.exports = router;

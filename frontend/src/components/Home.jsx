@@ -33,6 +33,7 @@ const Home = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [partecipanti, setPartecipanti] = useState([]);
   const [loadingPartecipanti, setLoadingPartecipanti] = useState(false);
+  const [loadingTeams, setLoadingTeams] = useState(false);
   const [torneoId, setTorneoId] = useState(null); // Definisci lo stato torneoId
   const [error, setError] = useState(null);
   const [torneoSelezionato, setTorneoSelezionato] = useState(null);
@@ -61,19 +62,22 @@ const Home = () => {
     }
   };
 
+  const fetchTournaments = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${apiUrl}/api/tournaments`);
+      setTornei(response.data);
+    } catch (error) {
+      console.error("Errore nel recupero dei tornei:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   useEffect(() => {
-    axios
-      .get(`${apiUrl}/api/tournaments`)
-      .then((response) => {
-        //console.log("Risposta API tornei:", response.data); // Aggiungi questo log per verificare
-        setTornei(response.data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Errore nel recupero dei tornei:", error);
-        setLoading(false);
-      });
+    fetchTournaments();
   }, []);
+  
 
   const getRankedLeaderboard = (partecipanti) => {
     // Ordina i partecipanti in base al punteggio decrescente
@@ -169,6 +173,49 @@ const Home = () => {
     },
   ];
 
+  const teamColumns = [
+    {
+      title: (
+        <span style={{ color: "#FFA500", fontWeight: "bold" }}>Posizione</span>
+      ),
+      dataIndex: "posizione",
+      key: "posizione",
+      render: (text) => (
+        <span style={{ color: "white", fontWeight: "bold" }}>{text}</span>
+      ),
+    },
+    {
+      title: (
+        <span style={{ color: "#00FF00", fontWeight: "bold" }}>Nome Team</span>
+      ),
+      dataIndex: "name",
+      key: "name",
+      render: (text) => (
+        <span style={{ color: "white", fontWeight: "bold" }}>
+          {text || "N/A"}
+        </span>
+      ),
+    },
+    {
+      title: (
+        <span style={{ color: "gold", fontWeight: "bold" }}>Punteggio</span>
+      ),
+      dataIndex: "score",
+      key: "score",
+      render: (int) => (
+        <span
+          style={{
+            color: "gold",
+            fontWeight: "bold",
+            textShadow: "0px 0px 10px rgba(255, 215, 0, 0.8)",
+          }}
+        >
+          {int || "0"}
+        </span>
+      ),
+    },
+  ];
+
   useEffect(() => {
     if (!partecipanti || partecipanti.length === 0) {
       console.log("⚠️ Nessun partecipante trovato o dati non disponibili.");
@@ -179,7 +226,17 @@ const Home = () => {
       );
     }
   }, [partecipanti]);
+  const [isTeamView, setIsTeamView] = useState(false); // Stato per gestire la vista (team o utenti)
+  const [teams, setTeams] = useState([]); // Stato per i dati dei team
 
+  useEffect(() => {
+    if (isTeamView) {
+      fetch(`${apiUrl}/api/teams`)
+        .then(response => response.json())
+        .then(data => setTeams(data));
+    }
+  }, [isTeamView]);
+  
 
 // Funzione per gestire l'iscrizione
 const handleIscrizione = () => {
@@ -310,68 +367,126 @@ const handleIscrizione = () => {
         </div>
 
         <Row gutter={16} style={{ marginBottom: "40px", marginTop: 70 }}>
-          <Modal
+        <Modal
+      open={isModalVisible}
+      onCancel={() => setIsModalVisible(false)}
+      footer={null}
+      width="90vw"
+      className="tournament-modal"
+      maskClassName="custom-mask"
+      destroyOnClose
+      style={{
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+      }}
+    >
+      <div
+        style={{
+          textAlign: 'center',
+          marginBottom: '20px',
+        }}
+      >
+        <span
+          style={{
+            color: '#00FFFF',
+            fontWeight: 'bold',
+            fontSize: '28px',
+            letterSpacing: '1px',
+            textTransform: 'uppercase',
+          }}
+        >
+          {torneoSelezionato?.titolo}
+        </span>
+      </div>
 
-            open={isModalVisible}
-            onCancel={() => setIsModalVisible(false)}
-            footer={null}
-            width="90vw"
-            className="tournament-modal" // Nuova classe più specifica
-            maskClassName="custom-mask"
-            destroyOnClose
-          >
-            <span
-              style={{
-                color: "#00FFFF",
-                fontWeight: "bold",
-                fontSize: 25,
-                zIndex: 1,
-              }}
-            >
-              {torneoSelezionato?.titolo}
-            </span>
+      {/* Image Section */}
+      <div
+        style={{
+          marginBottom: '30px',
+          textAlign: 'center',
+        }}
+      >
+        <img
+          src={torneoSelezionato?.image || 'https://wallpapers.com/images/hd/futuristic-spacecraft-battle-scene-in-outer-space-zyttyd8mqpke0qf4.jpg'}
+          alt="Tournament Image"
+          style={{
+            width: '100%',
+            maxHeight: '350px',
+            objectFit: 'cover',
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0, 255, 255, 0.2)',
+          }}
+        />
+      </div>
 
-            <div
-              style={{
-                background: "radial-gradient(circle, #111, #000)",
-                padding: "20px",
-                borderRadius: "12px",
-                boxShadow: "0 0 15px rgba(0, 255, 255, 0.5)",
-              }}
-            >
-              <Table
-                dataSource={rankedPlayers} // Usa rankedPartecipanti qui
-                columns={columns}
-                rowKey="partecipazione_id"
-                loading={loadingPartecipanti}
-                scroll={{ y: 400 }}
-                locale={{
-                  emptyText: (
-                    <Empty
-                      description={
-                        <span style={{ color: "#ccc" }}>
-                          Nessun partecipante registrato
-                        </span>
-                      }
-                    />
-                  ),
-                }}
-                rowClassName={(record, index) => {
-                  if (index === 0) return "top1";
-                  if (index === 1) return "top2";
-                  if (index === 2) return "top3";
-                  return "";
-                }}
-                style={{
-                  background: "#222",
-                  borderRadius: "10px",
-                  overflow: "hidden",
-                }}
-                pagination={false}
+      {/* Switch Tab Section */}
+      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+        <span
+          style={{
+            color: '#00FFFF',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            marginRight: '10px',
+          }}
+        >
+          Visualizza:
+        </span>
+        <Switch
+          checked={isTeamView}
+          onChange={(checked) => setIsTeamView(checked)}
+          checkedChildren="Teams"
+          unCheckedChildren="Users"
+          style={{
+            backgroundColor: '#00FFFF',
+            borderRadius: '50px',
+            padding: '1px 5px',
+          }}
+        />
+      </div>
+
+      {/* Data Table Section */}
+      <div
+        style={{
+          background: 'linear-gradient(145deg, #111, #000)',
+          padding: '25px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0, 255, 255, 0.3)',
+        }}
+      >
+        <Table
+          dataSource={isTeamView ? teams : rankedPlayers}
+          columns={isTeamView ? teamColumns : columns}
+          rowKey="id"
+          loading={isTeamView ? loadingTeams : loadingPartecipanti}
+          scroll={{ y: 400 }}
+          locale={{
+            emptyText: (
+              <Empty
+                description={
+                  <span style={{ color: '#ccc', fontSize: '16px' }}>
+                    {isTeamView ? 'Nessun team registrato' : 'Nessun partecipante registrato'}
+                  </span>
+                }
               />
+            ),
+          }}
+          rowClassName={(record, index) => {
+            if (index === 0) return 'top1';
+            if (index === 1) return 'top2';
+            if (index === 2) return 'top3';
+            return '';
+          }}
+          style={{
+            background: '#222',
+            borderRadius: '10px',
+            overflow: 'hidden',
+          }}
+          pagination={false}
+          bordered
+        />
+      </div>
+    </Modal>
 
-            </div>
-          </Modal>
 
           {/* Tornei in corso */}
           <Col span={24} md={12}>

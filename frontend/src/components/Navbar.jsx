@@ -99,32 +99,32 @@ const Navbar = () => {
   };
   const redirectToDiscord = () => {
     // Reindirizza l'utente alla route del backend per l'autenticazione Discord
-    window.location.href = "http://localhost:5002/api/auth/discord";
+    window.location.href = `${apiUrl}/api/auth/discord`;
 };
 
-  const handleDiscordLogin = async () => {
-
-    setLoading(true);
-    try {
-      const response = await axios.get(`${apiUrl}/api/auth/discord`);
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-        setIsLoggedIn(true);
-        setUsername(response.data.user.username);
-        setRole(response.data.user.role);
-        message.success("Accesso con Discord riuscito!");
-        navigate("/");
-      } else {
-        message.error("Errore durante l'accesso con Discord.");
-      }
-    } catch (error) {
-      message.error("Errore durante il login con Discord.");
-      console.error(error);
-    } finally {
-      setLoading(false);
+const handleDiscordLogin = async () => {
+  setLoading(true);
+  try {
+    const response = await axios.get(`${apiUrl}/api/auth/discord`);
+    if (response.data.token) {
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      setIsLoggedIn(true);
+      setUsername(response.data.user.username);
+      setRole(response.data.user.role);
+      message.success("Accesso con Discord riuscito!");
+      navigate("/");
+    } else {
+      message.error("Errore durante l'accesso con Discord.");
     }
-  };
+  } catch (error) {
+    message.error("Errore durante il login con Discord.");
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleLogin = async (values) => {
     setIsLoggingIn(true);

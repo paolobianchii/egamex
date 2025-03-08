@@ -1,26 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  HomeOutlined,
-  TeamOutlined,
-  AppstoreAddOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
-import {
-  Button,
-  Popconfirm,
-  message,
-  Layout,
-  Upload,
-  Table,
-  Form,
-  Modal,
-  Input,
-  DatePicker,
-  Tabs,
-  Select,
-} from "antd";
+import { HomeOutlined, TeamOutlined, AppstoreAddOutlined, PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { Button, Popconfirm, message, Layout, Upload, Table, Form, Modal, Input, DatePicker, Tabs, Select, Spin } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
+import moment from "moment"; // Importa moment.js
+
 const { Sider, Content } = Layout;
 const { TabPane } = Tabs;
 
@@ -28,26 +12,44 @@ const GestioneTornei = () => {
   const [users, setUsers] = useState([]);
   const [tournaments, setTournaments] = useState([]);
   const [editingTournament, setEditingTournament] = useState(null);
-  const [form] = Form.useForm();
-  const apiUrl = import.meta.env.VITE_BACKEND_URL;
   const [creatingTournament, setCreatingTournament] = useState(false);
   const [fileList, setFileList] = useState([]);
-  const [userFilter, setUserFilter] = useState(""); // Stato per i filtri utenti
-  const [tournamentFilter, setTournamentFilter] = useState(""); // Stato per i filtri tornei
+  const [userFilter, setUserFilter] = useState("");
+  const [tournamentFilter, setTournamentFilter] = useState("");
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [form] = Form.useForm();
+  const apiUrl = import.meta.env.VITE_BACKEND_URL;
 
-  // Funzioni per caricare i dati
+  // Fetching data functions
   const fetchUsers = async () => {
-    const response = await fetch(`${apiUrl}/api/users`);
-    const data = await response.json();
-    setUsers(data);
+    try {
+      setLoading(true);
+      const response = await fetch(`${apiUrl}/api/users`);
+      if (!response.ok) throw new Error("Failed to fetch users");
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      message.error("Errore durante il caricamento degli utenti.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchTournaments = async () => {
-    const response = await fetch(`${apiUrl}/api/tournaments`);
-    const data = await response.json();
-  console.log("Tornei ricevuti:", data);
-    setTournaments(data);
+    try {
+      setLoading(true);
+      const response = await fetch(`${apiUrl}/api/tournaments`);
+      if (!response.ok) throw new Error("Failed to fetch tournaments");
+      const data = await response.json();
+      setTournaments(data);
+    } catch (error) {
+      message.error("Errore durante il caricamento dei tornei.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -55,7 +57,7 @@ const GestioneTornei = () => {
     fetchTournaments();
   }, []);
 
-  // Funzioni di gestione
+  // Image handling logic
   const handleUpload = (file) => {
     const isImage = file.type.startsWith("image/");
     const isSizeValid = file.size / 1024 / 1024 < 5;
@@ -82,6 +84,7 @@ const GestioneTornei = () => {
     }
   };
 
+  // Tournament management
   const handleDeleteUser = (userId) => {
     message.success("Utente eliminato!");
     setUsers(users.filter((user) => user.id !== userId));
@@ -89,10 +92,7 @@ const GestioneTornei = () => {
 
   const handleDeleteTournament = async (tournamentId) => {
     try {
-      const response = await fetch(
-        `${apiUrl}/api/tournaments/${tournamentId}`,
-        { method: "DELETE" }
-      );
+      const response = await fetch(`${apiUrl}/api/tournaments/${tournamentId}`, { method: "DELETE" });
 
       if (!response.ok) {
         throw new Error("Errore durante l'eliminazione del torneo");
@@ -102,67 +102,58 @@ const GestioneTornei = () => {
       setTournaments(tournaments.filter((tournament) => tournament.id !== tournamentId));
     } catch (error) {
       message.error("Eliminazione non riuscita, riprova.");
+      console.error(error);
     }
   };
 
   const handleEditTournament = (tournament) => {
     setEditingTournament(tournament);
     setIsEditModalVisible(true);
-    
-    // Prepara i dati per il form
+
     form.setFieldsValue({
       titolo: tournament.titolo,
       modalita: tournament.modalita,
       data: tournament.data,
-      // Se l'immagine è già caricata, non la includiamo nel form
-      // perché Upload gestisce diversamente i file già esistenti
     });
   };
 
   const handleUpdateTournament = async () => {
     try {
       const values = await form.validateFields();
-      
+
       if (!values.titolo || !values.modalita || !values.data) {
         message.error("I campi 'titolo', 'modalita' e 'data' sono obbligatori.");
         return;
       }
-      
+
       const formData = new FormData();
       formData.append("titolo", values.titolo);
       formData.append("modalita", values.modalita);
       formData.append("data", values.data);
-      
-      // Aggiungi l'immagine solo se è stata caricata una nuova
-      if (values.image && values.image[0] && values.image[0].originFileObj) {
+
+      if (values.image && values.image[0]?.originFileObj) {
         formData.append("image", values.image[0].originFileObj);
       }
-      
-      const response = await fetch(
-        `${apiUrl}/api/tournaments/${editingTournament.id}`,
-        {
-          method: "PUT",
-          body: formData,
-        }
-      );
-      
+
+      const response = await fetch(`${apiUrl}/api/tournaments/${editingTournament.id}`, {
+        method: "PUT",
+        body: formData,
+      });
+
       if (!response.ok) {
         throw new Error("Errore durante l'aggiornamento del torneo");
       }
-      
+
       message.success("Torneo aggiornato con successo!");
       setIsEditModalVisible(false);
       setEditingTournament(null);
       form.resetFields();
-      fetchTournaments(); // Ricarica i tornei aggiornati
-      
+      fetchTournaments();
     } catch (error) {
       message.error("Aggiornamento non riuscito, riprova.");
-      console.error("Errore durante l'aggiornamento:", error);
+      console.error(error);
     }
   };
-
-  
 
   const handleCreateTournament = () => {
     form
@@ -183,10 +174,7 @@ const GestioneTornei = () => {
         }
 
         try {
-          const response = await fetch(`${apiUrl}/api/tournaments`, {
-            method: "POST",
-            body: formData,
-          });
+          const response = await fetch(`${apiUrl}/api/tournaments`, { method: "POST", body: formData });
 
           if (!response.ok) {
             throw new Error("Errore nella creazione del torneo");
@@ -198,6 +186,7 @@ const GestioneTornei = () => {
           fetchTournaments();
         } catch (error) {
           message.error("Creazione non riuscita, riprova.");
+          console.error(error);
         }
       })
       .catch(() => {
@@ -205,6 +194,7 @@ const GestioneTornei = () => {
       });
   };
 
+  // Columns for tables
   const userColumns = [
     { title: "Username", dataIndex: "username", key: "username" },
     { title: "Email", dataIndex: "email", key: "email" },
@@ -221,32 +211,64 @@ const GestioneTornei = () => {
   ];
 
   const tournamentColumns = [
-    { title: "Nome Torneo", dataIndex: "titolo", key: "titolo" },
-    { title: "Data", dataIndex: "data", key: "data" },
-    { title: "Modalita", dataIndex: "modalita", key: "modalita" },
+    {
+      title: "Nome Torneo",
+      dataIndex: "titolo",
+      key: "titolo",
+      render: (text) => (
+        <div className="font-semibold text-left">{text}</div>
+      ),
+    },
+    {
+      title: "Data",
+      dataIndex: "data",
+      key: "data",
+      render: (text) => (
+        <div className="text-center">{moment(text).format("DD/MM/YYYY")}</div>
+      ),
+    },
+    {
+      title: "Modalita",
+      dataIndex: "modalita",
+      key: "modalita",
+      render: (text) => (
+        <div className="text-left">{text}</div>
+      ),
+    },
     {
       title: "Immagine",
       dataIndex: "image",
       key: "image",
       render: (image) => (
-        <img 
-          src={`${apiUrl}${image}`} 
-          alt="Tournament" 
-          style={{ width: 50, height: 50 }} 
-        />
-      )
-      
+        <div className="flex justify-center">
+          <img src={`${apiUrl}${image}`} alt="Tournament" className="w-12 h-12 object-cover rounded-full" />
+        </div>
+      ),
     },
     {
       title: "Azioni",
       key: "action",
       render: (text, record) => (
-        <>
-          <Button type="link" onClick={() => handleEditTournament(record)}>Modifica</Button>
-          <Popconfirm title="Sei sicuro di voler eliminare questo torneo?" onConfirm={() => handleDeleteTournament(record.id)}>
-            <Button type="link" danger>Elimina</Button>
-          </Popconfirm>
-        </>
+        <div className="flex justify-center space-x-2">
+        <Button 
+          type="link" 
+          onClick={() => handleEditTournament(record)} 
+          className="text-blue-500 hover:text-blue-700">
+          <EditOutlined className="mr-1" />
+          Modifica
+        </Button>
+        <Popconfirm 
+          title="Sei sicuro di voler eliminare questo torneo?" 
+          onConfirm={() => handleDeleteTournament(record.id)}>
+          <Button 
+            type="link" 
+            danger 
+            className="text-red-500 hover:text-red-700">
+            <DeleteOutlined className="mr-1" />
+            Elimina
+          </Button>
+        </Popconfirm>
+      </div>
       ),
     },
   ];
@@ -254,40 +276,42 @@ const GestioneTornei = () => {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Layout style={{ padding: "0 4px 4px", backgroundColor: "#191029" }}>
-        <Content
-          style={{
-            padding: 24,
-            margin: 0,
-            minHeight: 280,
-            marginTop: 70,
-            marginBottom: 30,
-          }}
-        >
+        <Content style={{ padding: 24, margin: 0, minHeight: 280, marginTop: 70, marginBottom: 30 }}>
           <h1 style={{ color: "#fff" }}>Tornei</h1>
 
+          <Button
+            type="primary"
+            onClick={() => setCreatingTournament(true)}
+            style={{ float: "left", marginBottom: 10 }}
+          >
+            <PlusOutlined /> Crea Torneo
+          </Button>
 
-              <Button type="primary" onClick={() => setCreatingTournament(true)} style={{ float: "left", marginBottom: 10 }}>
-                <PlusOutlined/>Crea Torneo
-              </Button>
-              <Table
-                dataSource={tournaments.filter(tournament => tournament.titolo.includes(tournamentFilter))}
-                columns={tournamentColumns}
-                rowKey="id"
-                pagination={{ pageSize: 5 }}
-                scroll={{ x: "max-content" }}
-                title={() => (
-                  <div>
-                    <Input
-                      placeholder="Filtra per nome torneo"
-                      value={tournamentFilter}
-                      onChange={(e) => setTournamentFilter(e.target.value)}
-                      style={{ width: 200 }}
-                    />
-                  </div>
-                )}
-              />
+          {loading ? (
+            <Spin size="large" />
+          ) : (
+            <Table
+    dataSource={tournaments.filter((tournament) => tournament.titolo.includes(tournamentFilter))}
+    columns={tournamentColumns}
+    rowKey="id"
+    pagination={{ pageSize: 5 }}
+    scroll={{ x: "max-content" }}
+    title={() => (
+      <div className="flex justify-between items-center mb-4">
+        <Input
+          placeholder="Filtra per nome torneo"
+          value={tournamentFilter}
+          onChange={(e) => setTournamentFilter(e.target.value)}
+          style={{ width: 250 }}
+        />
+      </div>
+    )}
+    className="table-auto w-full bg-white rounded-lg shadow-md"
+    bordered
+  />
+          )}
 
-          {/* Modale per la creazione del torneo */}
+          {/* Modal for creating a tournament */}
           <Modal
             title="Crea Torneo"
             visible={creatingTournament}
@@ -305,19 +329,14 @@ const GestioneTornei = () => {
                 <Input />
               </Form.Item>
               <Form.Item name="image" label="Immagine" valuePropName="fileList" getValueFromEvent={(e) => e?.fileList || []}>
-                <Upload
-                  name="image"
-                  listType="picture"
-                  beforeUpload={() => false}
-                  onChange={handleChange}
-                >
+                <Upload name="image" listType="picture" beforeUpload={() => false} onChange={handleChange}>
                   <Button icon={<UploadOutlined />}>Carica immagine</Button>
                 </Upload>
               </Form.Item>
             </Form>
           </Modal>
 
-          {/* Modale per la modifica del torneo */}
+          {/* Modal for editing a tournament */}
           <Modal
             title="Modifica Torneo"
             visible={isEditModalVisible}
@@ -339,23 +358,14 @@ const GestioneTornei = () => {
                 <Input />
               </Form.Item>
               <Form.Item name="image" label="Immagine (opzionale)" valuePropName="fileList" getValueFromEvent={(e) => e?.fileList || []}>
-                <Upload
-                  name="image"
-                  listType="picture"
-                  beforeUpload={() => false}
-                  onChange={handleChange}
-                >
+                <Upload name="image" listType="picture" beforeUpload={() => false} onChange={handleChange}>
                   <Button icon={<UploadOutlined />}>Carica nuova immagine</Button>
                 </Upload>
               </Form.Item>
               {editingTournament && editingTournament.image && (
                 <div style={{ marginTop: 8 }}>
                   <p>Immagine attuale:</p>
-                  <img 
-                    src={editingTournament.image[0]?.url || editingTournament.image || ""} 
-                    alt="Current Tournament" 
-                    style={{ width: 100, height: 100, objectFit: 'cover' }} 
-                  />
+                  <img src={editingTournament.image[0]?.url || editingTournament.image || ""} alt="Current Tournament" style={{ width: 100, height: 100, objectFit: 'cover' }} />
                 </div>
               )}
             </Form>

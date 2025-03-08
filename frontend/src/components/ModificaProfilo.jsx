@@ -211,7 +211,7 @@ const formatDate = (timestamp) => {
                     style={{marginTop:20}}
                     size="large"
                   >
-                    Torna alla Dashboard
+                    Torna indietro
                   </Button>
                 </div>
               </Form>

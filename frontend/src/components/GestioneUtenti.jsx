@@ -10,9 +10,13 @@ const GestioneUtenti = () => {
 
   // Funzione per caricare gli utenti
   const fetchUsers = async () => {
-    const response = await fetch(`${apiUrl}/api/users`);
-    const data = await response.json();
-    setUsers(data);
+    try {
+      const response = await fetch(`${apiUrl}/api/users`);
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      message.error("Errore nel caricamento degli utenti");
+    }
   };
 
   useEffect(() => {
@@ -20,9 +24,25 @@ const GestioneUtenti = () => {
   }, []);
 
   // Funzione di gestione eliminazione utente
-  const handleDeleteUser = (userId) => {
-    message.success("Utente eliminato!");
-    setUsers(users.filter((user) => user.id !== userId));
+  const handleDeleteUser = async (userId) => {
+    try {
+      // Chiamata API per eliminare l'utente dal backend
+      const response = await fetch(`${apiUrl}/api/users/${userId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        message.success("Utente eliminato!");
+        // Rimuovi l'utente anche dallo stato locale
+        setUsers(users.filter((user) => user.id !== userId));
+      } else {
+        // Leggi il corpo della risposta per un errore dettagliato
+        const errorData = await response.json();
+        message.error(`Errore nell'eliminazione dell'utente: ${errorData.error || 'Errore sconosciuto'}`);
+      }
+    } catch (error) {
+      message.error("Errore nel processo di eliminazione");
+    }
   };
 
   const userColumns = [
@@ -54,15 +74,16 @@ const GestioneUtenti = () => {
         >
           <h1 style={{ color: "#fff" }}>Utenti</h1>
 
-
           <Table
             dataSource={users.filter(user => user.username.includes(userFilter))}
             columns={userColumns}
             rowKey="id"
+            className="table-auto w-full bg-white rounded-lg shadow-md"
+            bordered
             pagination={{ pageSize: 6 }}
             scroll={{ x: "max-content" }}
             title={() => (
-              <div>
+              <div className="flex justify-between items-center mb-4">
                 <Input
                   placeholder="Filtra per nome utente"
                   value={userFilter}

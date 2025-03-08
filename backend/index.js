@@ -16,6 +16,7 @@ const session = require("express-session");
 const path = require("path");
 const helmet = require("helmet");
 const xss = require("xss-clean");
+const axios = require('axios');
 
 
 dotenv.config(); // Carica le variabili d'ambiente
@@ -30,15 +31,20 @@ app.use(helmet()); // Protegge dagli attacchi comuni basati su intestazioni HTTP
 app.use(xss()); // Pulisce input dannosi da XSS
 
 app.use(bodyParser.json());
-app.use(cors());
-app.use(express.json());
+// Modifica la configurazione CORS all'inizio del file
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));app.use(express.json());
 
 passport.use(
     new DiscordStrategy(
       {
-        clientID: '1336795914349580319', // Inserisci il tuo Client ID di Discord
-        clientSecret: 'Hy3PUVeKrhA69DXp82yLbTONfHuRe-f4', // Inserisci il tuo Client Secret
-        callbackURL: 'https://kwxxejdmvgvsteairgyp.supabase.co/auth/v1/callback', // URL di callback
+        clientID: process.env.DISCORD_CLIENT_ID, // Inserisci il tuo Client ID di Discord
+        clientSecret: process.env.DISCORD_CLIENT_SECRET, // Inserisci il tuo Client Secret
+        callbackURL: process.env.DISCORD_CALLBACK_URL, // URL di callback
         scope: ['identify', 'email'], // Permessi richiesti
       },
       async (accessToken, refreshToken, profile, done) => {
@@ -66,8 +72,12 @@ passport.use(
   );
   
   // Middleware per gestire la sessione utente
-  app.use(session({ secret: 'mySuperSecretKey_1234!$%#', resave: false, saveUninitialized: false }));
-  app.use(passport.initialize());
+  app.use(session({
+    secret: 'O5ZhHBr4P5sZdUbkSBn2P8pLxCenFhLw',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: process.env.NODE_ENV === 'production' }
+  }));  app.use(passport.initialize());
   app.use(passport.session());
   
   // Serializzazione e deserializzazione dell'utente
@@ -102,19 +112,92 @@ const cacheMiddleware = (req, res, next) => {
     };
     next();
 };
-app.get("/auth/discord/callback", 
-  passport.authenticate("discord", { failureRedirect: "/" }),
-  (req, res) => {
-    const user = req.user;
-    const token = jwt.sign({ id: user.id, username: user.username, email: user.email }, process.env.JWT_SECRET_KEY);
-    res.json({
-      message: "Login riuscito",
-      token: token,
-      user: user,
-    });
-  }
-);
 
+// Endpoint per avviare il login con Discord
+app.get("/api/auth/discord", (req, res) => {
+  const state = Math.random().toString(36).substring(2, 15);
+  req.session.discordOAuthState = state;
+
+  const authUrl = `https://discord.com/oauth2/authorize?client_id=${process.env.DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${process.env.BACKEND_URL}/api/auth/discord/callback`)}&response_type=code&scope=identify%20email&state=${state}`;
+  res.redirect(authUrl);
+});
+
+// Endpoint di callback per Discord
+app.get("/api/auth/discord/callback", async (req, res) => {
+  const { code, state } = req.query;
+
+  if (state !== req.session.discordOAuthState) {
+    return res.status(403).send("State mismatch: possibile attacco CSRF.");
+  }
+
+  try {
+    // Scambia il codice con un token di accesso
+    const tokenResponse = await axios.post(
+      "https://discord.com/api/oauth2/token",
+      new URLSearchParams({
+        client_id: process.env.DISCORD_CLIENT_ID,
+        client_secret: process.env.DISCORD_CLIENT_SECRET,
+        grant_type: "authorization_code",
+        code: code,
+        redirect_uri: `${process.env.BACKEND_URL}/api/auth/discord/callback`,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    const { access_token } = tokenResponse.data;
+
+    // Ottieni le informazioni dell'utente
+    const userResponse = await axios.get("https://discord.com/api/users/@me", {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
+
+    const userData = userResponse.data;
+
+    // Salva l'utente nel database o nella sessione
+    req.session.user = userData;
+
+    // Reindirizza l'utente al frontend
+    res.redirect("http://localhost:5173");
+  } catch (error) {
+    console.error("Errore durante l'autenticazione con Discord:", error);
+    res.status(500).send("Errore durante l'autenticazione con Discord.");
+  }
+});
+
+// Endpoint per eliminare un utente
+app.delete('/api/users/:id', async (req, res) => {
+  const { id } = req.params; // Prendi l'ID dell'utente dalla rotta
+
+  try {
+      // Elimina l'utente dalla tabella "users"
+      const { error: deleteError } = await supabase
+          .from('users')
+          .delete()
+          .eq('id', id); // Filtro per l'ID dell'utente
+
+      if (deleteError) {
+          return res.status(500).json({ message: 'Errore nell\'eliminazione dell\'utente', error: deleteError.message });
+      }
+
+      // Elimina anche l'utente dalla tabella di autenticazione di Supabase
+      const { error: authDeleteError } = await supabase.auth.api.deleteUser(id); // Usa l'API di Supabase per eliminare l'utente
+      if (authDeleteError) {
+          return res.status(500).json({ message: 'Errore nell\'eliminazione dell\'utente dal sistema di autenticazione', error: authDeleteError.message });
+      }
+
+      // Rispondi con successo
+      res.status(200).json({ message: 'Utente eliminato con successo' });
+  } catch (error) {
+      console.error('Errore durante l\'eliminazione dell\'utente:', error);
+      res.status(500).json({ message: 'Errore del server', error });
+  }
+});
 
 
 // REGISTRAZIONE UTENTE
