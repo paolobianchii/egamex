@@ -45,7 +45,7 @@ const cacheMiddleware = (req, res, next) => {
 router.use("/uploads", express.static("uploads"));
 
 // Route per ottenere tutti i tornei
-router.get("/", async (req, res) => {
+router.get("/", cacheMiddleware, async (req, res) => {
   try {
     console.time("Supabase Query");
     const { data, error } = await supabase.from("tornei").select("*");
