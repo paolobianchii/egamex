@@ -150,6 +150,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     if (isAdmin) {
       // Aggiungi gli altri menu per l'admin
       items.push(
+        
         {
           key: "2",
           icon: <DashboardOutlined style={{ fontSize: 20 }} />,
@@ -212,49 +213,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     return items;
   }, [selectedKey, isAdmin]);
 
-  const handleRegister = async (values) => {
-    try {
-      const response = await axios.post(`${apiUrl}/api/register`, {
-        email: values.email,
-        password: values.password,
-        username: values.username,
-      });
-
-      message.success(response.data.message);
-      setIsModalVisible(false);
-    } catch (error) {
-      message.error(
-        error.response?.data?.error || "Errore nella registrazione."
-      );
-    }
-  };
-
-  const handleLogin = async (values) => {
-    console.log("Dati inviati:", values);
-    try {
-      const response = await axios.post(`${apiUrl}/api/login`, {
-        email: values.email,
-        password: values.password,
-      });
-
-      if (response.data.message) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("username", values.email);
-
-        setIsLoggedIn(true);
-        setUsername(values.email);
-        message.success(response.data.message);
-        setIsModalVisible(false);
-      } else {
-        message.error(response.data.error || "Credenziali errate.");
-      }
-    } catch (error) {
-      console.error("Errore durante il login:", error);
-      message.error(error.response?.data?.error || "Errore nel login.");
-    }
-  };
-
-  
 
   return (
     <>

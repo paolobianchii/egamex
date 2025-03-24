@@ -94,8 +94,8 @@ const ModificaProfilo = () => {
         ...initialData,
         username: form.getFieldValue("username"),
       });
+      navigate("/", { replace: true });
       window.location.reload();
-      navigate("/adminDashboard");
     } catch (error) {
       console.error("Errore durante l'aggiornamento", error);
       message.error("Errore durante l'aggiornamento del profilo");

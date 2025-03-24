@@ -65,12 +65,12 @@
 }
 
 :where(.css-dev-only-do-not-override-xex5fb).ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn{
-  color: #fff !important;
+  color: #c17aee !important;
     text-shadow: 0 0 0.25px currentcolor;
 }
 
 .custom-modal .ant-tabs-tab {
-  color: #282828;
+  color: #fff !important;
   font-weight: bold;
 }
 

@@ -7,7 +7,7 @@ const path = require("path");
 
 
 const router = express.Router();
-const cache = new NodeCache({ stdTTL: 60 }); // Cache con TTL di 60 secondi
+const cache = new NodeCache({ stdTTL: 300 }); // 5 minuti invece di 60 secondi
 
 // Assicurati che la cartella "uploads" esista
 const uploadDir = "uploads";
@@ -58,23 +58,30 @@ const cacheMiddleware = (req, res, next) => {
 router.use("/uploads", express.static("uploads"));
 
 // Route per ottenere tutti i tornei
+// Route per ottenere tutti i tornei
 router.get("/", cacheMiddleware, async (req, res) => {
   try {
     console.time("Supabase Query");
-    const { data, error } = await supabase.from("tornei").select("*");
-    console.timeEnd("Supabase Query"); // Mostra il tempo impiegato
+    const { data, error } = await supabase
+      .from("tornei")
+      .select("*")
+      .order("data", { ascending: false }) // Ordina per data decrescente
+      .limit(20); // Limita il numero di risultati
+
+    console.timeEnd("Supabase Query");
 
     if (error) {
       console.error("Errore nel recupero dei tornei:", error);
       return res.status(500).json({ error: "Errore nel recupero dei tornei" });
     }
-    
+
     res.json(data);
   } catch (error) {
     console.error("Errore durante la richiesta dei tornei:", error);
     res.status(500).json({ error: "Errore interno del server" });
   }
 });
+
 
 
 router.post("/", async (req, res) => {

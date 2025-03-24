@@ -1,5 +1,6 @@
 const express = require("express");
 const { supabase } = require("../lib/supabase");
+const { validate: validateUUID } = require('uuid');
 
 const router = express.Router();
 
@@ -8,9 +9,6 @@ router.get("/", async (req, res) => {
   try {
     const { data, error } = await supabase.from("partecipazioni").select("*");
 
-    // Log per visualizzare i dati ricevuti
-    //console.log("Dati ricevuti:", data);
-
     if (error) {
       console.error("Errore nel recupero delle partecipazioni:", error);
       return res.status(500).json({ error: "Errore nel recupero delle partecipazioni" });
@@ -23,55 +21,47 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Supponiamo che tu stia già recuperando i dati per il torneo specifico
-
-const { validate: validateUUID } = require('uuid');
-
-router.get("/:id", async (req, res) => {
-  const torneoId = req.params.id; // L'ID passato nella URL
+// Ottieni partecipazioni per un torneo specifico
+// Aggiungi una partecipazione a un torneo specifico
+router.post("/:torneoId", async (req, res) => {
+  const torneo_id = req.params.torneo_id;  // L'ID del torneo
+  const { utente_id, punteggio, created_at } = req.body;  // Ottieni l'ID dell'utente e il punteggio dalla richiesta
   
-  // Controlla se l'ID è un UUID valido
-  if (!validateUUID(torneoId)) {
-    console.error("ID torneo non valido:", torneoId);
-    return;
+  // Verifica se l'ID del torneo è un UUID valido
+  if (!validateUUID(torneo_id)) {
+    console.error("ID torneo non valido:", torneo_id);
+    return res.status(400).json({ error: "ID torneo non valido" });
   }
   
-  try {
-    const { data, error } = await supabase
-      .from("partecipazioni")
-      .select("*")
-      .eq("torneo_id", torneoId);
-
-    if (error) {
-      console.error("Errore nel recupero delle partecipazioni:", error);
-      return res.status(500).json({ error: "Errore nel recupero delle partecipazioni" });
-    }
-
-    res.json(data);
-  } catch (error) {
-    console.error("Errore durante la richiesta delle partecipazioni:", error);
-    res.status(500).json({ error: "Errore interno del server" });
+  // Verifica se l'ID utente è valido
+  if (!validateUUID(utente_id)) {
+    console.error("ID utente non valido:", utente_id);
+    return res.status(400).json({ error: "ID utente non valido" });
   }
-});
 
-
-router.get("/:torneoId", async (req, res) => {
-  const torneoId = req.params.torneoId; // Estrai l'ID del torneo dalla URL
   try {
-    // Recupera tutte le partecipazioni per quel torneo
+    // Aggiungi la partecipazione nel database
     const { data, error } = await supabase
       .from("partecipazioni")
-      .select("*")
-      .eq("torneo_id", torneoId);  // Filtra per ID torneo
-    
+      .insert([
+        { 
+          torneo_id: torneo_id, 
+          utente_id: utente_id, 
+          punteggio: punteggio,
+          created_at: created_at,  // Aggiungi created_at
+        }
+      ])
+      
+      .single();  // Restituisce un singolo record
+
     if (error) {
-      console.error("Errore nel recupero delle partecipazioni:", error);
-      return res.status(500).json({ error: "Errore nel recupero delle partecipazioni" });
+      console.error("Errore nell'aggiunta della partecipazione:", error);
+      return res.status(500).json({ error: "Errore nell'aggiunta della partecipazione" });
     }
 
-    res.json(data); // Restituisci i dati delle partecipazioni
+    res.status(201).json(data);  // Rispondi con i dati della partecipazione appena creata
   } catch (error) {
-    console.error("Errore durante la richiesta delle partecipazioni:", error);
+    console.error("Errore durante l'iscrizione:", error);
     res.status(500).json({ error: "Errore interno del server" });
   }
 });

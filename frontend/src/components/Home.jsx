@@ -20,6 +20,7 @@ import { Breadcrumb } from "antd";
 import { HomeOutlined } from "@ant-design/icons";
 import Footer from "./Footer";
 import imgTorneo from "../assets/torneoImage.png";
+import MarqueeGiochi from "./MarqueeGiochi";
 
 const { Meta } = Card;
 
@@ -75,22 +76,21 @@ const Home = () => {
       setLoading(false); // Ferma il loading una volta che i dati sono stati caricati
     }
   };
-  
+
   useEffect(() => {
     fetchTournaments();
   }, []);
-  
 
   const getRankedLeaderboard = (partecipanti) => {
     // Ordina i partecipanti in base al punteggio decrescente
     const sortedPlayers = [...partecipanti].sort(
       (a, b) => b.punteggio - a.punteggio
     );
-  
+
     let lastPunteggio = null;
     let lastRank = 0;
     let skipRank = 0;
-  
+
     return sortedPlayers.map((player, index) => {
       // Se il punteggio è uguale al precedente, assegna la stessa posizione
       if (player.punteggio === lastPunteggio) {
@@ -99,13 +99,13 @@ const Home = () => {
         lastRank += 1 + skipRank;
         skipRank = 0;
       }
-  
+
       lastPunteggio = player.punteggio;
-  
+
       return { ...player, posizione: lastRank };
     });
   };
-  
+
   const rankedPlayers = getRankedLeaderboard(partecipanti);
 
   const columns = [
@@ -234,47 +234,71 @@ const Home = () => {
   useEffect(() => {
     if (isTeamView) {
       fetch(`${apiUrl}/api/teams`)
-        .then(response => response.json())
-        .then(data => setTeams(data));
+        .then((response) => response.json())
+        .then((data) => setTeams(data));
     }
   }, [isTeamView]);
-  
+  const user = localStorage.getItem("user");
 
-// Funzione per gestire l'iscrizione
-const handleIscrizione = () => {
-  // Verifica se l'utente è loggato (adatta questa parte al tuo sistema di autenticazione)
-  const isLoggedIn = localStorage.getItem("authToken") !== null; // Verifica la presenza di un token di autenticazione
 
-  if (!isLoggedIn) {
-    // Mostra la notifica di errore se l'utente non è loggato
-    notification.error({
-      message: "Errore",
-      description: "Devi essere registrato per iscriverti a questo torneo.",
-      duration: 3, // Durata della notifica
-    });
-    return;
-  }
+  const handleIscrizione = async () => {
+    const user = JSON.parse(localStorage.getItem("user"));
 
-  // Se l'utente è loggato, continua con il processo di iscrizione
-  const torneoId = torneoSelezionato.id;
-
-  // Logica per iscrivere l'utente al torneo
-  axios
-    .post(`${apiUrl}/api/partecipanti/${torneoId}`, { userId, punteggio: 0 })
-    .then((response) => {
-      // Gestisci la risposta e aggiorna lo stato
-      setPartecipanti([...partecipanti, response.data]);
-      notification.success({
-        message: "Iscrizione completata",
-        description: "Sei stato iscritto al torneo con punteggio 0.",
+    if (!user) {
+      notification.error({
+        message: "Errore",
+        description: "Devi essere registrato per iscriverti a questo torneo.",
+        duration: 3,
       });
-    })
-    .catch((error) => {
+      return;
+    }
+
+    const createdAt = torneoSelezionato?.created_at; // Aggiungi created_at
+  const torneoId = torneoSelezionato?.id;  // Aggiungi id
+
+    if (!torneoId) {
+      notification.error({
+        message: "Errore",
+        description: "Torneo non trovato o non selezionato.",
+        duration: 3,
+      });
+      return;
+    }
+
+    const punteggio = 0;
+
+    try {
+      const response = await axios.post(`${apiUrl}/api/partecipazioni/${torneoId}`, {
+        torneo_id: torneoId,
+        utente_id: user.id, 
+        punteggio: punteggio,
+        created_at: createdAt,  // Passa created_at
+      });
+
+      if (response.status === 200 && response.data) {
+        setPartecipanti((prevPartecipanti) => [...prevPartecipanti, response.data]);
+        notification.success({
+          message: "Iscrizione completata",
+          description: "Sei stato iscritto al torneo con punteggio 0.",
+          duration: 3,
+        });
+      } else {
+        notification.error({
+          message: "Errore",
+          description: "Non è stato possibile completare l'iscrizione.",
+          duration: 3,
+        });
+      }
+    } catch (error) {
       console.error("Errore nell'iscrizione:", error);
-    });
-};
-
-
+      notification.error({
+        message: "Errore",
+        description: error.response?.data?.message || "Si è verificato un problema durante l'iscrizione.",
+        duration: 3,
+      });
+    }
+  };
+  
   // Funzione debounce per gestire la ricerca
   const handleSearchChange = debounce((value) => {
     setSearchTerm(value);
@@ -333,8 +357,6 @@ const handleIscrizione = () => {
     return `${diffDays} giorni ${diffHours}h ${diffMinutes}m`;
   };
 
-  
-
   return (
     <div
       style={{
@@ -371,126 +393,147 @@ const handleIscrizione = () => {
         </div>
 
         <Row gutter={16} style={{ marginBottom: "40px", marginTop: 70 }}>
-        <Modal
-      open={isModalVisible}
-      onCancel={() => setIsModalVisible(false)}
-      footer={null}
-      width="90vw"
-      className="tournament-modal"
-      maskClassName="custom-mask"
-      destroyOnClose
-      style={{
-        borderRadius: '12px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-      }}
-    >
-      <div
-        style={{
-          textAlign: 'center',
-          marginBottom: '20px',
-        }}
-      >
-        <span
-          style={{
-            color: '#00FFFF',
-            fontWeight: 'bold',
-            fontSize: '28px',
-            letterSpacing: '1px',
-            textTransform: 'uppercase',
-          }}
-        >
-          {torneoSelezionato?.titolo}
-        </span>
-      </div>
+          <Modal
+            open={isModalVisible}
+            onCancel={() => setIsModalVisible(false)}
+            footer={null}
+            width="90vw"
+            className="tournament-modal"
+            maskClassName="custom-mask"
+            destroyOnClose
+            style={{
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div
+              style={{
+                textAlign: "center",
+                marginBottom: "20px",
+              }}
+            >
+              <span
+                style={{
+                  color: "#00FFFF",
+                  fontWeight: "bold",
+                  fontSize: "28px",
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                }}
+              >
+                {torneoSelezionato?.titolo}
+              </span>
+            </div>
 
-      {/* Image Section */}
-      <div
-        style={{
-          marginBottom: '30px',
-          textAlign: 'center',
-        }}
-      >
-        <img
-          src={torneoSelezionato?.image || 'https://wallpapers.com/images/hd/futuristic-spacecraft-battle-scene-in-outer-space-zyttyd8mqpke0qf4.jpg'}
-          alt="Tournament Image"
-          style={{
-            width: '100%',
-            maxHeight: '350px',
-            objectFit: 'cover',
-            borderRadius: '12px',
-            boxShadow: '0 4px 20px rgba(0, 255, 255, 0.2)',
-          }}
-        />
-      </div>
-
-      {/* Switch Tab Section */}
-      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-        <span
-          style={{
-            color: '#00FFFF',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            marginRight: '10px',
-          }}
-        >
-          Visualizza:
-        </span>
-        <Switch
-          checked={isTeamView}
-          onChange={(checked) => setIsTeamView(checked)}
-          checkedChildren="Teams"
-          unCheckedChildren="Users"
-          style={{
-            backgroundColor: '#00FFFF',
-            borderRadius: '50px',
-            padding: '1px 5px',
-          }}
-        />
-      </div>
-
-      {/* Data Table Section */}
-      <div
-        style={{
-          background: 'linear-gradient(145deg, #111, #000)',
-          padding: '25px',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0, 255, 255, 0.3)',
-        }}
-      >
-        <Table
-          dataSource={isTeamView ? teams : rankedPlayers}
-          columns={isTeamView ? teamColumns : columns}
-          rowKey="id"
-          loading={isTeamView ? loadingTeams : loadingPartecipanti}
-          scroll={{ y: 400 }}
-          locale={{
-            emptyText: (
-              <Empty
-                description={
-                  <span style={{ color: '#ccc', fontSize: '16px' }}>
-                    {isTeamView ? 'Nessun team registrato' : 'Nessun partecipante registrato'}
-                  </span>
+            {/* Image Section */}
+            <div
+              style={{
+                marginBottom: "30px",
+                textAlign: "center",
+              }}
+            >
+              <img
+                src={
+                  torneoSelezionato?.image ||
+                  "https://wallpapers.com/images/hd/futuristic-spacecraft-battle-scene-in-outer-space-zyttyd8mqpke0qf4.jpg"
                 }
+                alt="Tournament Image"
+                style={{
+                  width: "100%",
+                  maxHeight: "350px",
+                  objectFit: "cover",
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 20px rgba(0, 255, 255, 0.2)",
+                }}
               />
-            ),
-          }}
-          rowClassName={(record, index) => {
-            if (index === 0) return 'top1';
-            if (index === 1) return 'top2';
-            if (index === 2) return 'top3';
-            return '';
-          }}
-          style={{
-            background: '#222',
-            borderRadius: '10px',
-            overflow: 'hidden',
-          }}
-          pagination={false}
-          bordered
-        />
-      </div>
-    </Modal>
+            </div>
 
+            {/* Switch Tab Section */}
+            <div style={{ marginBottom: "20px", textAlign: "center" }}>
+              <span
+                style={{
+                  color: "#00FFFF",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  marginRight: "10px",
+                }}
+              >
+                Visualizza:
+              </span>
+              <Switch
+                checked={isTeamView}
+                onChange={(checked) => setIsTeamView(checked)}
+                checkedChildren="Teams"
+                unCheckedChildren="Users"
+                style={{
+                  backgroundColor: "#00FFFF",
+                  borderRadius: "50px",
+                  padding: "1px 5px",
+                }}
+              />
+            </div>
+            {user?.role === "user" && (
+  <div style={{ textAlign: "center", marginTop: "20px" }}>
+    <Button
+      type="primary"
+      style={{
+        backgroundColor: "#00FFFF",
+        border: "none",
+        fontSize: "16px",
+        fontWeight: "bold",
+        padding: "10px 20px",
+      }}
+      onClick={handleIscrizione}
+    >
+      Iscriviti al torneo
+    </Button>
+  </div>
+)}
+
+            {/* Data Table Section */}
+            <div
+              style={{
+                background: "linear-gradient(145deg, #111, #000)",
+                padding: "25px",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0, 255, 255, 0.3)",
+              }}
+            >
+              <Table
+                dataSource={isTeamView ? teams : rankedPlayers}
+                columns={isTeamView ? teamColumns : columns}
+                rowKey="id"
+                loading={isTeamView ? loadingTeams : loadingPartecipanti}
+                scroll={{ y: 400 }}
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description={
+                        <span style={{ color: "#ccc", fontSize: "16px" }}>
+                          {isTeamView
+                            ? "Nessun team registrato"
+                            : "Nessun partecipante registrato"}
+                        </span>
+                      }
+                    />
+                  ),
+                }}
+                rowClassName={(record, index) => {
+                  if (index === 0) return "top1";
+                  if (index === 1) return "top2";
+                  if (index === 2) return "top3";
+                  return "";
+                }}
+                style={{
+                  background: "#222",
+                  borderRadius: "10px",
+                  overflow: "hidden",
+                }}
+                pagination={false}
+                bordered
+              />
+            </div>
+          </Modal>
 
           {/* Tornei in corso */}
           <Col span={24} md={12}>
@@ -533,16 +576,16 @@ const handleIscrizione = () => {
                     }}
                   >
                     <div className="loading-spinner">
-    <Spin size="large" />
-    <span>Caricamento tornei...</span>
-  </div>
+                      <Spin size="large" />
+                      <span>Caricamento tornei...</span>
+                    </div>
                   </div>
                 )}
                 {loading ? (
                   <div className="loading-spinner">
-    <Spin size="large" />
-    <span>Loading tornei...</span>
-  </div>                  
+                    <Spin size="large" />
+                    <span>Loading tornei...</span>
+                  </div>
                 ) : inCorsoTornei.length > 0 ? (
                   inCorsoTornei.map((torneo) => (
                     <Col span={24} sm={12} md={18} lg={12} key={torneo.id}>
@@ -552,11 +595,13 @@ const handleIscrizione = () => {
                         cover={
                           <img
                             alt={torneo.titolo}
-                            src={torneo.image || "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG"} // Default image URL
+                            src={
+                              torneo.image ||
+                              "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG"
+                            } // Default image URL
                             style={{ height: "150px", objectFit: "cover" }}
                           />
                         }
-                        
                       >
                         {/* Badge sopra l'immagine */}
                         <div
@@ -720,11 +765,13 @@ const handleIscrizione = () => {
                         cover={
                           <img
                             alt={torneo.titolo}
-                            src={torneo.image || "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG"} // Default image URL
+                            src={
+                              torneo.image ||
+                              "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG"
+                            } // Default image URL
                             style={{ height: "150px", objectFit: "cover" }}
                           />
                         }
-                        
                       >
                         <Meta
                           title={
@@ -811,90 +858,7 @@ const handleIscrizione = () => {
           </Col>
         </Row>
 
-        {/* Carosello di loghi */}
-        <h2
-          style={{
-            color: "white",
-            textAlign: "left",
-            marginBottom: "20px",
-            fontSize: 34,
-            marginLeft: 5,
-            fontWeight: "700",
-          }}
-        >
-          Giochi
-        </h2>
-        <div
-          style={{
-            background: "rgba(15, 14, 23, 0.1)",
-            backdropFilter: "blur(10px)",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
-            padding: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <div style={{ overflow: "hidden", width: "100%" }}>
-            <div
-              style={{
-                display: "flex",
-                animation: "scroll 10s linear infinite",
-              }}
-            >
-              <img
-                src="https://cdn2.steamgriddb.com/logo_thumb/db6d9e1beb13d90e4a67706afb39e4e8.png"
-                alt="Logo 1"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-              <img
-                src="https://www.stormforcegaming.co.uk/wp-content/uploads/2024/04/FortniteLogo-wht.png"
-                alt="Logo 2"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-              <img
-                src="https://fifauteam.com/images/fc25/logo/long-white.webp"
-                alt="Logo 3"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-              <img
-                src="https://logos-world.net/wp-content/uploads/2020/12/Dota-2-Logo.png"
-                alt="Logo 4"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-              <img
-                src="https://freepnglogo.com/images/all_img/1706273096valorant-logo-png-white.png"
-                alt="Logo 5"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-
-              {/* Duplica il contenuto per far sembrare che l'animazione sia infinita */}
-              <img
-                src="https://cdn2.steamgriddb.com/logo_thumb/db6d9e1beb13d90e4a67706afb39e4e8.png"
-                alt="Logo 1"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-              <img
-                src="https://www.stormforcegaming.co.uk/wp-content/uploads/2024/04/FortniteLogo-wht.png"
-                alt="Logo 2"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-              <img
-                src="https://fifauteam.com/images/fc25/logo/long-white.webp"
-                alt="Logo 3"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-              <img
-                src="https://logos-world.net/wp-content/uploads/2020/12/Dota-2-Logo.png"
-                alt="Logo 4"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-              <img
-                src="https://freepnglogo.com/images/all_img/1706273096valorant-logo-png-white.png"
-                alt="Logo 5"
-                style={{ height: "50px", marginRight: "100px" }}
-              />
-            </div>
-          </div>
-        </div>
+        <MarqueeGiochi />
 
         <Footer />
       </div>

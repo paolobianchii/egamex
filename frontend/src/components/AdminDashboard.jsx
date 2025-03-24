@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Layout, Card, Col, Row, Statistic, Button } from "antd";
+import { Layout, Card, Col, Row, Statistic, Button, Badge } from "antd";
 import { Link } from "react-router-dom";
+import Meta from "antd/es/card/Meta";
 
 const { Content } = Layout;
 
@@ -24,6 +25,7 @@ const buttonStyle = {
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [tournaments, setTournaments] = useState([]);
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -32,6 +34,12 @@ const AdminDashboard = () => {
     const response = await fetch(`${apiUrl}/api/users`);
     const data = await response.json();
     setUsers(data);
+  };
+
+  const fetchTeams = async () => {
+    const response = await fetch(`${apiUrl}/api/teams`);
+    const data = await response.json();
+    setTeams(data);
   };
 
   const fetchTournaments = async () => {
@@ -43,11 +51,12 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchUsers();
     fetchTournaments();
+    fetchTeams();
   }, []);
 
   // Count dei tornei dal db
   const totalTournaments = tournaments.length;  // Conta tutti i tornei senza filtro
-
+  const totalTeams = teams.length;  // Conta tutti i tornei senza filtro
   const gamesCount = 10; // Esempio, sostituire con il conteggio dei giochi
   const totalUsers = users.length;
 
@@ -64,14 +73,40 @@ const AdminDashboard = () => {
           }}
         >
           <h1 style={{ color: "#fff" }}>Dashboard</h1>
-
+          
           {/* Sezione con le card */}
           <Row gutter={16}>
+          <Col
+              xs={24} sm={12} md={8} lg={6} xl={6}  // Responsività per diverse larghezze di schermo
+            >
+              <Card
+                title="Utenti"
+                bordered={false}
+                style={{
+                  backgroundColor: "#8a2be2", // Viola
+                  borderRadius: 10,
+                  boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+                }}
+                headStyle={{
+                  color: "#fff", // Colore testo del titolo
+                  fontWeight: "bold",
+                  fontSize: "18px",
+                }}
+              >
+                
+                <Link to="/gestione-utenti" style={{ color: 'white', textDecoration: 'none' }}>
+                <Statistic 
+                  value={totalUsers} 
+                  valueStyle={{ fontSize: '32px', color: '#ffffff' }} // Font-size più grande e colore del testo bianco
+                />
+                </Link>
+              </Card>
+            </Col>
             <Col
               xs={24} sm={12} md={8} lg={6} xl={6}  // Responsività per diverse larghezze di schermo
             >
               <Card
-                title="Tornei totali"
+                title="Tornei"
                 bordered={false}
                 style={{
                   backgroundColor: "#8a2be2", // Viola
@@ -99,7 +134,7 @@ const AdminDashboard = () => {
               xs={24} sm={12} md={8} lg={6} xl={6}  // Responsività per diverse larghezze di schermo
             >
               <Card
-                title="Giochi"
+                title="Teams"
                 bordered={false}
                 style={{
                   backgroundColor: "#8a2be2", // Viola
@@ -113,40 +148,81 @@ const AdminDashboard = () => {
                   fontSize: "18px",
                 }}
               >
-                <Statistic 
-                  value={gamesCount} 
-                  valueStyle={{ fontSize: '32px', color: '#ffffff' }} // Font-size più grande e colore del testo bianco
-                />
+                <Link to="/teams" style={{ color: 'white', textDecoration: 'none' }}>
+                  <Statistic 
+                    value={totalTeams} 
+                    valueStyle={{ fontSize: '32px', color: '#ffffff' }} // Font-size più grande e colore del testo bianco
+                  />
+
+                </Link>
 
               </Card>
             </Col>
-            <Col
-              xs={24} sm={12} md={8} lg={6} xl={6}  // Responsività per diverse larghezze di schermo
-            >
+            
+          </Row>
+          <br></br>
+          <h1 style={{color:"#fff"}}> Anteprima tornei</h1>
+          <Row gutter={[16, 16]}>
+          {tournaments.map((tournament) => (
+            <Col key={tournament.id} xs={24} sm={12} md={8} lg={6} xl={6}>
               <Card
-                title="Totale utenti"
-                bordered={false}
+                hoverable
+                cover={<img alt={tournament.titolo} src={tournament.image} style={{ height: 120, objectFit: "cover" }} />}
                 style={{
-                  backgroundColor: "#8a2be2", // Viola
+                  backgroundColor: "#fff",
                   borderRadius: 10,
+                  color: "#fff",
                   boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+                  height: 260, // Imposta un'altezza fissa per uniformare le card
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
                 }}
-                headStyle={{
-                  color: "#fff", // Colore testo del titolo
-                  fontWeight: "bold",
-                  fontSize: "18px",
-                }}
+                headStyle={{ color: "#fff", fontWeight: "bold", fontSize: "18px" }}
               >
-                
-                <Link to="/gestione-utenti" style={{ color: 'white', textDecoration: 'none' }}>
-                <Statistic 
-                  value={totalUsers} 
-                  valueStyle={{ fontSize: '32px', color: '#ffffff' }} // Font-size più grande e colore del testo bianco
-                />
-                </Link>
+ <Meta
+                          title={
+                            <h3
+                              style={{
+                                fontWeight: "700",
+                                fontSize: "18px",
+                                color: "#282828",
+                              }}
+                            >
+                              {tournament.titolo}
+                            </h3>
+                          }
+                          description={
+                            <Badge
+                              count={`${tournament.modalita}`}
+                              style={{
+                                backgroundColor: "#282828", // Colore del badge (puoi cambiarlo)
+                                color: "white", // Colore del testo
+                                padding: "12px", // Padding per fare un po' di spazio attorno al testo
+                                display: "flex",
+                                marginTop: -20,
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderRadius: "6px", // Per rendere gli angoli arrotondati
+                                fontSize: "12px", // Regola la dimensione del font
+                              }}
+                            />
+                          }
+                        />
+                        <div style={{ marginTop: 5, marginBottom: 10 }}>
+                          <span style={{ fontSize: 11, color:"#282828" }}>
+                            Creato il: <strong>{new Date(tournament.data).toLocaleString("it-IT", {
+                              year: "numeric", // Anno
+                              month: "long", // Mese
+                              day: "numeric", // Giorno
+                            })}
+                            </strong>
+                          </span>
+                        </div>                
               </Card>
             </Col>
-          </Row>
+          ))}
+        </Row>
         </Content>
       </Layout>
     </Layout>

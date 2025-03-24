@@ -3,12 +3,24 @@ const { supabase } = require("../lib/supabase");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-
-
 const router = express.Router();
 
-
 const saltRounds = 10; // Numero di cicli per l'hashing della password
+const authenticateJWT = (req, res, next) => {
+  const token = req.header("Authorization")?.replace("Bearer ", "");
+  
+  if (!token) {
+    return res.status(401).json({ error: "Token mancante" });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    req.user = decoded; // Salva l'informazione dell'utente decodificato
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Token non valido" });
+  }
+};
 
 // 1️⃣ Ottieni tutti gli utenti
 router.get("/", async (req, res) => {
@@ -45,38 +57,32 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// 6️⃣ Ottieni il ruolo dell'utente tramite JWT
-router.get("/role", async (req, res) => {
-  const token = req.header("Authorization")?.replace("Bearer ", "");
-
-  if (!token) {
-    return res.status(401).json({ error: "Token mancante" });
-  }
-
+// Route protetta che richiede l'autenticazione
+router.get("/role", authenticateJWT, async (req, res) => {
+  const userId = req.user.userId; // Ottieni userId dalla richiesta (decodificato)
+  
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    const userId = decoded.userId;
-
     const { data, error } = await supabase
       .from("users")
       .select("role")
       .eq("id", userId)
       .single();
-
+    
     if (error) {
       return res.status(500).json({ error: error.message });
     }
-
+    
     if (!data) {
       return res.status(404).json({ error: "Utente non trovato" });
     }
-
+    
     res.json({ role: data.role });
   } catch (error) {
     console.error("Errore nel recupero del ruolo:", error.message);
     res.status(500).json({ error: "Errore durante il recupero del ruolo dell'utente" });
   }
 });
+
 
 // REGISTRAZIONE UTENTE
 // REGISTRAZIONE UTENTE
@@ -134,22 +140,23 @@ router.post("/register", async (req, res) => {
       return res.status(500).json({ error: "Errore nell'inserimento dell'utente" });
     }
 
-    res.status(201).json({ 
-      message: "Utente registrato con successo", 
-      user: {
-        id: userId,
-        username,
-        email,
-        role: userData.role
-      }
-    });
+    // Dopo aver registrato un nuovo utente, solo al login generi un token
+res.status(201).json({ 
+  message: "Utente registrato con successo", 
+  user: {
+    id: userId,
+    username,
+    email,
+    role: userData.role
+  }
+});
+
   } catch (error) {
     console.error("Errore registrazione:", error);
     res.status(500).json({ error: "Errore durante la registrazione" });
   }
 });
 
-// LOGIN UTENTE
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -174,31 +181,21 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { 
-        userId: userData.id, 
-        email: userData.email, 
-        username: userData.username,
-        role: userData.role 
-      },
+      { userId: userData.id, role: userData.role },
       process.env.JWT_SECRET_KEY,
       { expiresIn: "1h" }
     );
 
     res.json({
       message: "Login effettuato con successo!",
-      user: {
-        id: userData.id,
-        username: userData.username,
-        email: userData.email,
-        role: userData.role
-      },
-      token,
+      token, // Invia solo il token, non l'intero oggetto user
     });
   } catch (error) {
     console.error("Errore login:", error.message);
     res.status(500).json({ error: "Errore durante il login" });
   }
 });
+
 
 // 4️⃣ Modifica un utente
 router.put("/:id", async (req, res) => {
@@ -270,27 +267,39 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// Route che richiede permessi di amministratore
+router.get("/admin", authenticateJWT, async (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Non hai accesso a questa risorsa" });
+  }
+  // Logica per l'accesso admin
+  res.json({ message: "Benvenuto, admin!" });
+});
+
+
 // 5️⃣ Elimina un utente
-router.delete("/:id", async (req, res) => {
+router.delete("/users/:id", async (req, res) => {
   const { id } = req.params;
+
   try {
     console.log(`Eliminazione richiesta per l'utente con ID: ${id}`);
 
-    // Verifica che l'utente esista
+    // Verifica se l'utente esiste nella tabella users
     const { data: userData, error: fetchUserError } = await supabase
       .from("users")
       .select("id")
       .eq("id", id)
       .single();
 
-    if (fetchUserError || !userData) {
+    if (!userData || fetchUserError) {
       console.log("Utente non trovato:", fetchUserError);
       return res.status(404).json({ error: "Utente non trovato." });
     }
 
-    // Elimina l'utente da Supabase Auth
+    // Elimina l'utente da Supabase Auth con il client admin
     console.log("Eliminazione dell'utente da Supabase Auth...");
-    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(id);
+    const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(id);
+    
     if (authDeleteError) {
       console.log("Errore durante l'eliminazione da Supabase Auth:", authDeleteError);
       return res.status(500).json({ error: "Errore durante l'eliminazione dall'autenticazione: " + authDeleteError.message });
@@ -299,19 +308,21 @@ router.delete("/:id", async (req, res) => {
     // Elimina l'utente dalla tabella 'users'
     console.log("Eliminazione dell'utente dalla tabella 'users'...");
     const { error } = await supabase.from("users").delete().eq("id", id);
+
     if (error) {
       console.log("Errore durante l'eliminazione dalla tabella 'users':", error);
-      return res.status(500).json({ error: "Errore durante l'eliminazione dall'utente: " + error.message });
+      return res.status(500).json({ error: "Errore durante l'eliminazione dell'utente: " + error.message });
     }
 
-    // Risposta positiva dopo che entrambe le operazioni sono state completate
     console.log("Utente eliminato con successo.");
     res.json({ message: "Utente eliminato con successo" });
+
   } catch (error) {
     console.error("Errore durante l'eliminazione dell'utente:", error.message);
     res.status(500).json({ error: "Errore interno durante l'eliminazione dell'utente." });
   }
 });
+
 
 
 

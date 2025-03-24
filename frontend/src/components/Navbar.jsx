@@ -360,12 +360,11 @@ const handleDiscordLogin = async () => {
           </Button>
         </Form.Item>
 
-        {/* Divider Line */}
+{/*
         <hr style={{ border: '1px solid #ddd', margin: '20px 0' }} />
 
         
 
-        {/* Discord login button */}
         <Form.Item>
           <Button
               onClick={redirectToDiscord}  // Cambiato da disabled a onClick
@@ -384,6 +383,7 @@ const handleDiscordLogin = async () => {
             <DiscordOutlined /> Accedi con Discord
           </Button>
         </Form.Item>
+        */}
       </Form>
     </TabPane>
 
