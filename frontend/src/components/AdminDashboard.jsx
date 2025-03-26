@@ -211,12 +211,12 @@ const AdminDashboard = () => {
                         />
                         <div style={{ marginTop: 5, marginBottom: 10 }}>
                           <span style={{ fontSize: 11, color:"#282828" }}>
-                            Creato il: <strong>{new Date(tournament.data).toLocaleString("it-IT", {
+                            {new Date(tournament.data).toLocaleString("it-IT", {
                               year: "numeric", // Anno
                               month: "long", // Mese
                               day: "numeric", // Giorno
                             })}
-                            </strong>
+
                           </span>
                         </div>                
               </Card>

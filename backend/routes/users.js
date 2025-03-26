@@ -2,6 +2,7 @@ const express = require("express");
 const { supabase } = require("../lib/supabase");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const { v4: uuidv4 } = require('uuid'); // Importa la funzione per generare UUID
 
 const router = express.Router();
 
@@ -23,9 +24,12 @@ const authenticateJWT = (req, res, next) => {
 };
 
 // 1️⃣ Ottieni tutti gli utenti
+// 1️⃣ Ottieni tutti gli utenti
 router.get("/", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("users").select("*");
+    const { data, error } = await supabase
+      .from("users")
+      .select("*"); // Ottieni tutti i dati degli utenti
 
     if (error) {
       return res.status(500).json({ error: error.message });
@@ -36,6 +40,7 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Errore durante la ricerca degli utenti" });
   }
 });
+
 
 // 2️⃣ Ottieni un utente per ID
 router.get("/:id", async (req, res) => {
@@ -59,32 +64,37 @@ router.get("/:id", async (req, res) => {
 
 // Route protetta che richiede l'autenticazione
 router.get("/role", authenticateJWT, async (req, res) => {
-  const userId = req.user.userId; // Ottieni userId dalla richiesta (decodificato)
-  
+  if (!req.user || !req.user.userId) {
+    return res.status(401).json({ error: "Utente non autenticato" });
+  }
+
+  const userId = req.user.userId; // Ottieni userId dal token
+
   try {
     const { data, error } = await supabase
       .from("users")
       .select("role")
       .eq("id", userId)
       .single();
-    
+
     if (error) {
-      return res.status(500).json({ error: error.message });
+      console.error("Errore Supabase:", error);
+      return res.status(500).json({ error: "Errore interno del server" });
     }
-    
+
     if (!data) {
       return res.status(404).json({ error: "Utente non trovato" });
     }
-    
+
     res.json({ role: data.role });
   } catch (error) {
-    console.error("Errore nel recupero del ruolo:", error.message);
+    console.error("Errore nel recupero del ruolo:", error);
     res.status(500).json({ error: "Errore durante il recupero del ruolo dell'utente" });
   }
 });
 
 
-// REGISTRAZIONE UTENTE
+
 // REGISTRAZIONE UTENTE
 router.post("/register", async (req, res) => {
   const { email, password, username, role } = req.body;
@@ -128,17 +138,19 @@ router.post("/register", async (req, res) => {
       email,
       password: hashedPassword,
       role: role || 'user'
-    };
 
+    };
+    
     const { data: insertedUser, error: insertError } = await supabase
       .from("users")
       .insert([userData])
       .select();
-
+    
     if (insertError) {
       await supabase.auth.admin.deleteUser(userId);
       return res.status(500).json({ error: "Errore nell'inserimento dell'utente" });
     }
+    
 
     // Dopo aver registrato un nuovo utente, solo al login generi un token
 res.status(201).json({ 
@@ -167,7 +179,7 @@ router.post("/login", async (req, res) => {
   try {
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("id, username, email, password, role")
+      .select("id, username, email, password, role, punteggio") // Aggiungi "punteggio"
       .eq("email", email)
       .single();
 
@@ -188,7 +200,13 @@ router.post("/login", async (req, res) => {
 
     res.json({
       message: "Login effettuato con successo!",
-      token, // Invia solo il token, non l'intero oggetto user
+      user: {
+        id: userData.id,
+        username: userData.username,
+        email: userData.email,
+        role: userData.role,
+      },
+      token,
     });
   } catch (error) {
     console.error("Errore login:", error.message);
@@ -197,19 +215,27 @@ router.post("/login", async (req, res) => {
 });
 
 
+
 // 4️⃣ Modifica un utente
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { username, email, password } = req.body;
+  const { username, email, password, game1, game2, game3, game4 } = req.body;
 
   try {
-    let updates = { 
-      username, 
-    };
+    let updates = { username };
 
+    // Aggiorna i valori dei giochi se forniti
+    if (game1 !== undefined) updates.game1 = game1;
+    if (game2 !== undefined) updates.game2 = game2;
+    if (game3 !== undefined) updates.game3 = game3;
+    if (game4 !== undefined) updates.game4 = game4;
+
+    // Ricalcola il punteggio
+    updates.punteggio =
+    (game1 ?? 0) + (game2 ?? 0) + (game3 ?? 0) + (game4 ?? 0);
+  
     // Verifica se l'email è stata modificata
     if (email) {
-      // Recupera l'utente attuale per verificare se l'email è cambiata
       const { data: currentUser, error: fetchError } = await supabase
         .from("users")
         .select("email")
@@ -220,28 +246,20 @@ router.put("/:id", async (req, res) => {
         return res.status(404).json({ error: "Utente non trovato" });
       }
 
-      // Se l'email è cambiata, aggiorna anche su Supabase Auth
       if (currentUser.email !== email) {
-        const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
-          id,
-          { email }
-        );
+        const { error: authUpdateError } = await supabase.auth.admin.updateUserById(id, { email });
 
         if (authUpdateError) {
           return res.status(500).json({ error: "Impossibile aggiornare l'email: " + authUpdateError.message });
         }
 
-        // Aggiungi l'email agli aggiornamenti del database utenti
         updates.email = email;
       }
     }
 
     // Se è stata fornita una nuova password, aggiornala in Supabase Auth
     if (password) {
-      const { error: passwordUpdateError } = await supabase.auth.admin.updateUserById(
-        id,
-        { password }
-      );
+      const { error: passwordUpdateError } = await supabase.auth.admin.updateUserById(id, { password });
 
       if (passwordUpdateError) {
         return res.status(500).json({ error: "Impossibile aggiornare la password: " + passwordUpdateError.message });
@@ -278,7 +296,15 @@ router.get("/admin", authenticateJWT, async (req, res) => {
 
 
 // 5️⃣ Elimina un utente
-router.delete("/users/:id", async (req, res) => {
+const { createClient } = require('@supabase/supabase-js');
+
+// Inizializza supabaseAdmin
+const supabaseAdmin = createClient(
+  'https://your-project-url.supabase.co',
+  'your-service-role-key'
+);
+
+router.delete("/api/users/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -291,15 +317,23 @@ router.delete("/users/:id", async (req, res) => {
       .eq("id", id)
       .single();
 
-    if (!userData || fetchUserError) {
-      console.log("Utente non trovato:", fetchUserError);
+    if (fetchUserError) {
+      console.log("Errore durante il recupero dell'utente:", fetchUserError);
+      return res.status(500).json({ error: "Errore nel recupero dell'utente." });
+    }
+
+    if (!userData) {
+      console.log("Utente non trovato");
       return res.status(404).json({ error: "Utente non trovato." });
     }
+
+    // Log per verificare che supabaseAdmin.auth sia correttamente definito
+    console.log(supabaseAdmin.auth); 
 
     // Elimina l'utente da Supabase Auth con il client admin
     console.log("Eliminazione dell'utente da Supabase Auth...");
     const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(id);
-    
+
     if (authDeleteError) {
       console.log("Errore durante l'eliminazione da Supabase Auth:", authDeleteError);
       return res.status(500).json({ error: "Errore durante l'eliminazione dall'autenticazione: " + authDeleteError.message });
@@ -324,6 +358,40 @@ router.delete("/users/:id", async (req, res) => {
 });
 
 
+router.post("/", async (req, res) => {
+  const { username, email } = req.body;
+
+  // Genera un UUID random per l'utente
+  const userId = uuidv4();
+
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .insert([
+        {
+          id: userId,  // Inserisci l'ID generato
+          username,
+          email,
+          punteggio: 0,
+          game1: 0,
+          game2: 0,
+          game3: 0,
+          game4: 0,
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error("Errore durante l'inserimento:", error);
+    res.status(500).json({ error: "Errore durante la creazione dell'utente" });
+  }
+});
 
 
 module.exports = router;

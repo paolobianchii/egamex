@@ -32,7 +32,6 @@ const Home = () => {
   const [showTeams, setShowTeams] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null); // Stato per l'utente loggato
   const [isLoginVisible, setIsLoginVisible] = useState(false); // Stato per la modale di login
-
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [partecipanti, setPartecipanti] = useState([]);
   const [loadingPartecipanti, setLoadingPartecipanti] = useState(false);
@@ -40,6 +39,23 @@ const Home = () => {
   const [torneoId, setTorneoId] = useState(null); // Definisci lo stato torneoId
   const [error, setError] = useState(null);
   const [torneoSelezionato, setTorneoSelezionato] = useState(null);
+  const [user, setUser] = useState(null);
+  
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      console.log("User from localStorage:", parsedUser); // Debug per verificare
+      setUser(parsedUser);
+    } else {
+      console.log("No user found in localStorage");
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log("User state updated:", user);  // Verifica se user cambia correttamente
+  }, [user]);
 
   const openModal = async (torneo) => {
     if (!torneo) return;
@@ -81,30 +97,36 @@ const Home = () => {
     fetchTournaments();
   }, []);
 
-  const getRankedLeaderboard = (partecipanti) => {
-    // Ordina i partecipanti in base al punteggio decrescente
-    const sortedPlayers = [...partecipanti].sort(
-      (a, b) => b.punteggio - a.punteggio
-    );
+  
 
+  const getRankedLeaderboard = (partecipanti) => {
+    // Calcola punteggio sommando i game
+    const playersWithScore = partecipanti.map(player => ({
+      ...player,
+      punteggio: (player.game1 || 0) + (player.game2 || 0) + (player.game3 || 0) + (player.game4 || 0)
+    }));
+  
+    // Ordina per punteggio decrescente
+    const sortedPlayers = playersWithScore.sort((a, b) => b.punteggio - a.punteggio);
+  
     let lastPunteggio = null;
     let lastRank = 0;
     let skipRank = 0;
-
+  
     return sortedPlayers.map((player, index) => {
-      // Se il punteggio è uguale al precedente, assegna la stessa posizione
       if (player.punteggio === lastPunteggio) {
         skipRank++;
       } else {
         lastRank += 1 + skipRank;
         skipRank = 0;
       }
-
+  
       lastPunteggio = player.punteggio;
-
+  
       return { ...player, posizione: lastRank };
     });
   };
+  
 
   const rankedPlayers = getRankedLeaderboard(partecipanti);
 
@@ -137,10 +159,10 @@ const Home = () => {
       ),
       dataIndex: "game1",
       key: "game1",
-      render: (text) => (
+      render: (int) => (
         <span style={{ color: "white", fontWeight: "bold" }}>
-          {text || "-"}
-        </span>
+    {int !== undefined ? int : "N/A"}
+    </span>
       ),
     },
     {
@@ -149,10 +171,10 @@ const Home = () => {
       ),
       dataIndex: "game2",
       key: "game2",
-      render: (text) => (
+      render: (int) => (
         <span style={{ color: "white", fontWeight: "bold" }}>
-          {text || "-"}
-        </span>
+    {int !== undefined ? int : "N/A"}
+    </span>
       ),
     },
     {
@@ -169,8 +191,8 @@ const Home = () => {
             textShadow: "0px 0px 10px rgba(255, 215, 0, 0.8)",
           }}
         >
-          {int || "0"}
-        </span>
+    {int !== undefined ? int : "N/A"}
+    </span>
       ),
     },
   ];
@@ -238,13 +260,11 @@ const Home = () => {
         .then((data) => setTeams(data));
     }
   }, [isTeamView]);
-  const user = localStorage.getItem("user");
 
 
   const handleIscrizione = async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
-
-    if (!user) {
+    // Verifica che l'utente sia loggato
+    if (!user || !user.id || !user.role) {
       notification.error({
         message: "Errore",
         description: "Devi essere registrato per iscriverti a questo torneo.",
@@ -252,29 +272,32 @@ const Home = () => {
       });
       return;
     }
-
-    const createdAt = torneoSelezionato?.created_at; // Aggiungi created_at
-  const torneoId = torneoSelezionato?.id;  // Aggiungi id
-
-    if (!torneoId) {
-      notification.error({
-        message: "Errore",
-        description: "Torneo non trovato o non selezionato.",
-        duration: 3,
-      });
-      return;
-    }
-
+  
+    // Logica per l'iscrizione
+    const torneoId = torneoSelezionato?.id;
+    const createdAt = torneoSelezionato?.created_at;
     const punteggio = 0;
-
+  
     try {
+      // Verifica se l'utente è già iscritto al torneo
+      const checkResponse = await axios.get(`${apiUrl}/api/partecipazioni/${torneoId}/utente/${user.id}`);
+      if (checkResponse.data.iscrizione) {
+        notification.info({
+          message: "Sei già iscritto",
+          description: "Non puoi iscriverti più di una volta a questo torneo.",
+          duration: 3,
+        });
+        return; // Non eseguire l'iscrizione se già iscritto
+      }
+  
+      // Aggiungi la partecipazione se non è già presente
       const response = await axios.post(`${apiUrl}/api/partecipazioni/${torneoId}`, {
         torneo_id: torneoId,
-        utente_id: user.id, 
+        utente_id: user.id,
         punteggio: punteggio,
-        created_at: createdAt,  // Passa created_at
+        created_at: createdAt,
       });
-
+  
       if (response.status === 200 && response.data) {
         setPartecipanti((prevPartecipanti) => [...prevPartecipanti, response.data]);
         notification.success({
@@ -299,6 +322,7 @@ const Home = () => {
     }
   };
   
+
   // Funzione debounce per gestire la ricerca
   const handleSearchChange = debounce((value) => {
     setSearchTerm(value);
@@ -439,8 +463,8 @@ const Home = () => {
                 }
                 alt="Tournament Image"
                 style={{
-                  width: "100%",
-                  maxHeight: "350px",
+                  width: "40%",
+                  maxHeight: "300px",
                   objectFit: "cover",
                   borderRadius: "12px",
                   boxShadow: "0 4px 20px rgba(0, 255, 255, 0.2)",
@@ -472,23 +496,28 @@ const Home = () => {
                 }}
               />
             </div>
-            {user?.role === "user" && (
-  <div style={{ textAlign: "center", marginTop: "20px" }}>
-    <Button
-      type="primary"
-      style={{
-        backgroundColor: "#00FFFF",
-        border: "none",
-        fontSize: "16px",
-        fontWeight: "bold",
-        padding: "10px 20px",
-      }}
-      onClick={handleIscrizione}
-    >
-      Iscriviti al torneo
-    </Button>
-  </div>
-)}
+            {user && user.id ? (
+        user.role === "user" ? (
+          <Button
+            type="primary"
+            style={{
+              backgroundColor: "#00FFFF",
+              border: "none",
+              fontSize: "16px",
+              fontWeight: "bold",
+              padding: "10px 20px",
+            }}
+            onClick={handleIscrizione}
+          >
+            Iscriviti al torneo
+          </Button>
+        ) : (
+          <p style={{ color: "#fff" }}>Devi essere loggato come utente per partecipare.</p>
+        )
+      ) : (
+        <p style={{ color: "#fff" }}>Accedi prima di iscriverti al torneo.</p>
+      )}
+
 
             {/* Data Table Section */}
             <div

@@ -27,6 +27,9 @@ import {
   DiscordOutlined,
   DashboardOutlined,
   TeamOutlined,
+  LinkedinOutlined,
+  LinkedinFilled,
+  DiscordFilled,
 } from "@ant-design/icons";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { useNavigate } from "react-router-dom";
@@ -69,6 +72,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       return null;
     }
   };
+  const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     if (!token) {
@@ -76,9 +80,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       return;
     }
 
-    const userData = getUserIdFromToken(token);
-
-    if (userData?.role === "admin") {
+    if (user?.role === "admin") {
       setIsAdmin(true);
       setIsLoggedIn(true);
       return;
@@ -86,7 +88,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
     // Se il ruolo non è nel token, facciamo una chiamata al backend per sicurezza
     axios
-      .get(`${apiUrl}/api/user/${userData?.id}`, {
+      .get(`${apiUrl}/api/users/${user?.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
@@ -135,7 +137,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         key: "1",
         icon: <HomeOutlined style={{ fontSize: 20 }} />,
         label: "Home",
-        onClick: () => handleMenuClick("1", "/"),
+        onClick: () => handleMenuClick("1", ""),
         style: {
           fontSize: 16,
           fontWeight: "500",
@@ -268,7 +270,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             rel="noopener noreferrer"
             style={{ color: "white", fontSize: "20px" }}
           >
-            <DiscordOutlined />
+            <DiscordFilled />
           </a>
           <a
             href="https://x.com/i/flow/login?redirect_after_login=%2FeGameX_Official%2F"
@@ -286,7 +288,16 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           >
             <InstagramOutlined />
           </a>
+          <a
+            href="https://www.linkedin.com/company/egamexofficial/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "white", fontSize: "20px" }}
+          >
+            <LinkedinFilled />
+          </a>
         </div>
+        
 
         
       </Sider>

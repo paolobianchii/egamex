@@ -38,17 +38,22 @@ const Navbar = () => {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+  
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
-      const user = JSON.parse(localStorage.getItem("user"));
+    if (token && user?.id) {
       setIsLoggedIn(true);
-      setEmail(user?.email || "");  // Imposta la email correttamente
-      setUsername(user?.username || ""); // Imposta lo username se disponibile
-      fetchUserDetails(token);  // Recupera i dettagli aggiuntivi, se necessario
+      setEmail(user?.email || "");
+      setUsername(user?.username || "");
+      setRole(user?.role || "");
+      fetchUserDetails(token);  // Recupera i dettagli aggiuntivi dopo il login
+    } else {
+      setIsLoggedIn(false);
     }
-  }, []);
-  
+  }, [user]);  // Re-render quando `user` cambia
+
+  const showLoginModal = () => setIsModalVisible(true); // Mostra la modale
+  const hideLoginModal = () => setIsModalVisible(false); // Nasconde la modale
 
   const fetchUserDetails = async (token) => {
     try {
@@ -58,13 +63,12 @@ const Navbar = () => {
         },
       });
       if (response.data && response.data.email) {
-        // Imposta i valori in modo condizionale
-        setUsername(response.data.username || user.username);  // Preferisci lo username dell'API
-        setEmail(response.data.email); // Imposta sempre l'email aggiornata
-        setRole(response.data.role); // Imposta il ruolo se necessario
+        setUsername(response.data.username || user.username);
+        setEmail(response.data.email);
+        setRole(response.data.role);
         localStorage.setItem("username", response.data.username);
         localStorage.setItem("email", response.data.email);
-        localStorage.setItem("role", response.data.role); // Salva il ruolo
+        localStorage.setItem("role", response.data.role);
       } else {
         console.error("Dati utente non trovati o email non presente");
       }
@@ -73,58 +77,6 @@ const Navbar = () => {
       console.error(error);
     }
   };
-  
-
-  const showLoginModal = () => setIsModalVisible(true); // Mostra la modale
-  const hideLoginModal = () => setIsModalVisible(false); // Nasconde la modale
-
-  const handleLogout = () => {
-    setIsLoggingOut(true); // Mostra la sovrapposizione di logout
-    setLoading(true); // Inizia il caricamento
-    
-    // Rimuovi i dati di autenticazione dal localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    
-    // Imposta lo stato di logout
-    setIsLoggedIn(false);
-    setUsername(null);
-    
-    message.success("Logout effettuato con successo");
-    
-    // Breve timeout prima di eseguire il refresh completo
-    setTimeout(() => {
-      window.location.href = "/"; // Esegue un refresh completo e reindirizza alla home
-    }, 500);
-  };
-  const redirectToDiscord = () => {
-    // Reindirizza l'utente alla route del backend per l'autenticazione Discord
-    window.location.href = `${apiUrl}/api/auth/discord`;
-};
-
-const handleDiscordLogin = async () => {
-  setLoading(true);
-  try {
-    const response = await axios.get(`${apiUrl}/api/auth/discord`);
-    if (response.data.token) {
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      setIsLoggedIn(true);
-      setUsername(response.data.user.username);
-      setRole(response.data.user.role);
-      message.success("Accesso con Discord riuscito!");
-      navigate("/");
-    } else {
-      message.error("Errore durante l'accesso con Discord.");
-    }
-  } catch (error) {
-    message.error("Errore durante il login con Discord.");
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
-
 
   const handleLogin = async (values) => {
     setIsLoggingIn(true);
@@ -134,23 +86,23 @@ const handleDiscordLogin = async () => {
         email: DOMPurify.sanitize(values.email),
         password: values.password,
       });
-  
+
       if (response.data.message) {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
         setIsLoggedIn(true);
-        setUsername(values.email);
-        setRole(response.data.user.role); // Imposta il ruolo al momento del login
+        setUsername(response.data.user.username);
+        setRole(response.data.user.role);
         message.success(response.data.message);
         hideLoginModal();
-  
+
         // Dopo il login, reindirizza in base al ruolo
         if (response.data.user.role === "admin") {
           navigate("/adminDashboard");
         } else {
           navigate("/");
         }
-  
+
         // Refresh della pagina dopo il login
         window.location.reload();
       } else {
@@ -163,7 +115,21 @@ const handleDiscordLogin = async () => {
       setIsLoggingIn(false);
     }
   };
-  
+
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    setLoading(true);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setIsLoggedIn(false);
+    setUsername(null);
+    message.success("Logout effettuato con successo");
+
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 500);
+  };
+
 
   const handleRegister = async (values) => {
     setLoading(true); // Inizia il caricamento

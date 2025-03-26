@@ -239,10 +239,24 @@ const GestioneTornei = () => {
       title: "Modalita",
       dataIndex: "modalita",
       key: "modalita",
-      render: (text) => (
-        <div className="text-left">{text}</div>
-      ),
-    },
+      render: (text) => {
+        let displayText = '';
+        switch (text) {
+          case 'Eliminazione_Diretta':
+            displayText = 'Eliminazione diretta';
+            break;
+          case 'Round_Robin':
+            displayText = 'Round Robin';
+            break;
+          case 'Battle_Royale':
+            displayText = 'Battle Royale';
+            break;
+          default:
+            displayText = 'N/A';
+        }
+        return <div className="text-left">{displayText}</div>;
+      },
+    },    
     {
       title: "Immagine",
       dataIndex: "image",
@@ -342,9 +356,14 @@ const GestioneTornei = () => {
               <Form.Item name="data" label="Data" rules={[{ required: true, message: "Inserisci la data del torneo!" }]}>
                 <Input type="date" />
               </Form.Item>
-              <Form.Item name="modalita" label="Modalità" rules={[{ required: true, message: "Inserisci la modalità!" }]}>
-                <Input />
-              </Form.Item>
+              <Form.Item name="modalita" label="Modalità" rules={[{ required: true, message: "Seleziona una modalità!" }]}>
+  <Select placeholder="Seleziona modalità">
+    <Select.Option value="Eliminazione_Diretta">Eliminazione diretta</Select.Option>
+    <Select.Option value="Round_Robin">Round Robin</Select.Option>
+    <Select.Option value="Battle_Royale">Battle Royale</Select.Option>
+  </Select>
+</Form.Item>
+
 
             </Form>
           </Modal>
@@ -367,9 +386,14 @@ const GestioneTornei = () => {
               <Form.Item name="data" label="Data" rules={[{ required: true, message: "Inserisci la data del torneo!" }]}>
                 <Input type="date" />
               </Form.Item>
-              <Form.Item name="modalita" label="Modalità" rules={[{ required: true, message: "Inserisci la modalità!" }]}>
-                <Input />
-              </Form.Item>
+              <Form.Item name="modalita" label="Modalità" rules={[{ required: true, message: "Seleziona una modalità!" }]}>
+  <Select placeholder="Seleziona modalità">
+    <Select.Option value="Eliminazione_Diretta">Eliminazione diretta</Select.Option>
+    <Select.Option value="Round_Robin">Round Robin</Select.Option>
+    <Select.Option value="Battle_Royale">Battle Royale</Select.Option>
+  </Select>
+</Form.Item>
+
               <Form.Item name="image" label="Immagine (opzionale)" valuePropName="fileList" getValueFromEvent={(e) => e?.fileList || []}>
                 <Upload name="image" listType="picture" beforeUpload={() => false} onChange={handleChange}>
                   <Button icon={<UploadOutlined />}>Carica nuova immagine</Button>
