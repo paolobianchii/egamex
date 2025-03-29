@@ -283,7 +283,7 @@ app.delete('/api/teams/:id', async (req, res) => {
 
 // Endpoint per creare un team
 app.post('/api/teams', async (req, res) => {
-  const { name, participants, score, numParticipants } = req.body;
+  const { name, participants, score, numParticipants, game1, game2, game3, game4 } = req.body;
 
   // Inserimento del team nella tabella
   try {
@@ -292,6 +292,10 @@ app.post('/api/teams', async (req, res) => {
         name,
         score,
         num_participants: numParticipants,
+        game1,
+        game2,
+        game3,
+        game4,
         created_at: new Date(),
         updated_at: new Date(),
       },

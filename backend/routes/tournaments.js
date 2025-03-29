@@ -117,6 +117,145 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Route per ottenere i giocatori di un torneo
+router.get('/:tournamentId/players', async (req, res) => {
+  const { tournamentId } = req.params;
+
+  try {
+    // Verifica che il torneo esista
+    const { data: tournament, error: tournamentError } = await supabase
+      .from('tornei')
+      .select('*')
+      .eq('id', tournamentId)
+      .single();
+
+    if (tournamentError || !tournament) {
+      return res.status(404).json({ error: 'Torneo non trovato' });
+    }
+
+    // Recupera i giocatori associati al torneo dalla tabella partecipazioni
+    const { data: players, error: playersError } = await supabase
+      .from('partecipazioni')
+      .select(`
+        utenti:utente_id (
+          id,
+          username,
+          email,
+          punteggio
+        )
+      `)
+      .eq('torneo_id', tournamentId);
+
+    if (playersError) {
+      console.error('Errore nel recupero dei giocatori:', playersError);
+      return res.status(500).json({ error: 'Errore nel recupero dei giocatori' });
+    }
+
+    // Estrae i dati degli utenti dalla relazione
+    const formattedPlayers = players.map(item => item.utenti);
+
+    res.json(formattedPlayers);
+  } catch (error) {
+    console.error('Errore interno:', error);
+    res.status(500).json({ error: 'Errore interno del server' });
+  }
+});
+
+// Route per aggiungere giocatori a un torneo
+router.post('/:tournamentId/players', async (req, res) => {
+  const { tournamentId } = req.params;
+  const { playerIds } = req.body;
+
+  if (!Array.isArray(playerIds)) {
+    return res.status(400).json({ error: 'playerIds deve essere un array' });
+  }
+
+  try {
+    // Verifica che il torneo esista
+    const { data: tournament, error: tournamentError } = await supabase
+      .from('tornei')
+      .select('*')
+      .eq('id', tournamentId)
+      .single();
+
+    if (tournamentError || !tournament) {
+      return res.status(404).json({ error: 'Torneo non trovato' });
+    }
+
+    // Verifica che tutti gli utenti esistano
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id')
+      .in('id', playerIds);
+
+    if (usersError) {
+      console.error('Errore nel recupero degli utenti:', usersError);
+      return res.status(500).json({ error: 'Errore nel recupero degli utenti' });
+    }
+
+    if (users.length !== playerIds.length) {
+      return res.status(400).json({ error: 'Uno o più utenti non esistono' });
+    }
+
+    // Prepara i dati da inserire nella tabella partecipazioni
+    const participations = playerIds.map(userId => ({
+      torneo_id: tournamentId,
+      utente_id: userId
+    }));
+
+    // Inserisci le partecipazioni
+    const { data: insertedParticipations, error: insertError } = await supabase
+      .from('partecipazioni')
+      .insert(participations)
+      .select();
+
+    if (insertError) {
+      console.error('Errore nell\'aggiunta dei giocatori:', insertError);
+      return res.status(500).json({ error: 'Errore nell\'aggiunta dei giocatori' });
+    }
+
+    res.status(201).json(insertedParticipations);
+  } catch (error) {
+    console.error('Errore interno:', error);
+    res.status(500).json({ error: 'Errore interno del server' });
+  }
+});
+
+// Route per rimuovere un giocatore da un torneo
+router.delete('/:tournamentId/players/:playerId', async (req, res) => {
+  const { tournamentId, playerId } = req.params;
+
+  try {
+    // Verifica che la partecipazione esista
+    const { data: participation, error: participationError } = await supabase
+      .from('partecipazioni')
+      .select('*')
+      .eq('torneo_id', tournamentId)
+      .eq('utente_id', playerId);
+
+    if (participationError || !participation || participation.length === 0) {
+      return res.status(404).json({ error: 'Partecipazione non trovata' });
+    }
+
+    // Elimina la partecipazione
+    const { error: deleteError } = await supabase
+      .from('partecipazioni')
+      .delete()
+      .eq('torneo_id', tournamentId)
+      .eq('utente_id', playerId);
+
+    if (deleteError) {
+      console.error('Errore nella rimozione del giocatore:', deleteError);
+      return res.status(500).json({ error: 'Errore nella rimozione del giocatore' });
+    }
+
+    res.status(200).json({ message: 'Giocatore rimosso dal torneo' });
+  } catch (error) {
+    console.error('Errore interno:', error);
+    res.status(500).json({ error: 'Errore interno del server' });
+  }
+});
+
 
 // Route per modificare un torneo con gestione file locale
 router.put("/:id", upload.single("image"), async (req, res) => {

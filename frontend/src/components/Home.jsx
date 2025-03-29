@@ -40,7 +40,6 @@ const Home = () => {
   const [error, setError] = useState(null);
   const [torneoSelezionato, setTorneoSelezionato] = useState(null);
   const [user, setUser] = useState(null);
-  
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -59,18 +58,23 @@ const Home = () => {
 
   const openModal = async (torneo) => {
     if (!torneo) return;
-
+  
     setTorneoSelezionato(torneo);
     setLoadingPartecipanti(true);
     setIsModalVisible(true);
-
+  
     try {
       const response = await axios.get(
         `${apiUrl}/api/partecipanti/${torneo.id}`
       );
-
+  
       if (Array.isArray(response.data) && response.data.length > 0) {
-        setPartecipanti(response.data);
+        // Aggiungi il campo user_score a ciascun partecipante
+        const partecipantiConPunteggio = response.data.map(partecipante => ({
+          ...partecipante,
+          user_score: partecipante.user?.punteggio || 0
+        }));
+        setPartecipanti(partecipantiConPunteggio);
       } else {
         setPartecipanti([]);
       }
@@ -100,10 +104,14 @@ const Home = () => {
   
 
   const getRankedLeaderboard = (partecipanti) => {
-    // Calcola punteggio sommando i game
+    // Calcola punteggio sommando i game + il punteggio dell'utente (user_score)
     const playersWithScore = partecipanti.map(player => ({
       ...player,
-      punteggio: (player.game1 || 0) + (player.game2 || 0) + (player.game3 || 0) + (player.game4 || 0)
+      punteggio: (player.game1 || 0) + 
+                (player.game2 || 0) + 
+                (player.game3 || 0) + 
+                (player.game4 || 0) +
+                (player.user_score || 0) // Questo è il punteggio dalla tabella users
     }));
   
     // Ordina per punteggio decrescente
@@ -123,7 +131,12 @@ const Home = () => {
   
       lastPunteggio = player.punteggio;
   
-      return { ...player, posizione: lastRank };
+      return { 
+        ...player, 
+        posizione: lastRank,
+        // Aggiungi esplicitamente il punteggio utente se vuoi mostrarlo separatamente
+        punteggio_utente: player.user_score || 0
+      };
     });
   };
   
@@ -179,7 +192,19 @@ const Home = () => {
     },
     {
       title: (
-        <span style={{ color: "gold", fontWeight: "bold" }}>Punteggio</span>
+        <span style={{ color: "purple", fontWeight: "bold" }}>Punteggio Utente</span>
+      ),
+      dataIndex: "punteggio_utente",
+      key: "punteggio_utente",
+      render: (int) => (
+        <span style={{ color: "white", fontWeight: "bold" }}>
+          {int !== undefined ? int : "N/A"}
+        </span>
+      ),
+    },
+    {
+      title: (
+        <span style={{ color: "gold", fontWeight: "bold" }}>Punteggio Totale</span>
       ),
       dataIndex: "punteggio",
       key: "punteggio",
@@ -191,8 +216,8 @@ const Home = () => {
             textShadow: "0px 0px 10px rgba(255, 215, 0, 0.8)",
           }}
         >
-    {int !== undefined ? int : "N/A"}
-    </span>
+          {int !== undefined ? int : "N/A"}
+        </span>
       ),
     },
   ];
@@ -496,6 +521,7 @@ const Home = () => {
                 }}
               />
             </div>
+            {/*
             {user && user.id ? (
         user.role === "user" ? (
           <Button
@@ -512,12 +538,12 @@ const Home = () => {
             Iscriviti al torneo
           </Button>
         ) : (
-          <p style={{ color: "#fff" }}>Devi essere loggato come utente per partecipare.</p>
+          <p style={{ color: "#fff" }}></p>
         )
       ) : (
-        <p style={{ color: "#fff" }}>Accedi prima di iscriverti al torneo.</p>
+        <p style={{ color: "#fff" }}></p>
       )}
-
+*/}
 
             {/* Data Table Section */}
             <div

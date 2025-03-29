@@ -13,7 +13,7 @@ import {
   Row,
   Col,
 } from "antd";
-import { UserOutlined, UploadOutlined, HomeOutlined } from "@ant-design/icons";
+import { UserOutlined, UploadOutlined, MailOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -26,8 +26,28 @@ const ModificaProfilo = () => {
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
   const [loading, setLoading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR); // Stato per gestire l'URL dell'avatar
-  const [isUsernameChanged, setIsUsernameChanged] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR);
+  const [isFormChanged, setIsFormChanged] = useState(false);
+  const [user, setUser] = useState(null);
+  const [initialValues, setInitialValues] = useState({
+    username: "",
+  });
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      // Imposta i valori iniziali dall'utente in localStorage
+      setInitialValues({
+        username: parsedUser.username,
+      });
+      // Imposta i valori nel form
+      form.setFieldsValue({
+        username: parsedUser.username,
+      });
+    }
+  }, []);
 
   const backgroundStyle = {
     background: 'linear-gradient(135deg,rgb(59, 14, 113),rgb(56, 24, 77),rgb(56, 21, 66),rgb(62, 19, 70))',
@@ -39,10 +59,9 @@ const ModificaProfilo = () => {
     color:"#fff"
   };
 
-  // Card-like Container Style with Blur Effect
   const containerStyle = {
-    background: 'rgba(0, 0, 0, 0.4)', // Slightly transparent white
-    backdropFilter: 'blur(10px)', // Blur effect
+    background: 'rgba(0, 0, 0, 0.4)',
+    backdropFilter: 'blur(10px)',
     borderRadius: '16px',
     border: '1px solid rgba(255, 255, 255, 0.125)',
     boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
@@ -51,15 +70,6 @@ const ModificaProfilo = () => {
     maxWidth: '1200px',
     color:"#fff"
   };
-
-  const {
-    username = "",
-    email = "",
-    role = "",
-    avatar = "",
-    created_at = "",
-    punteggio = 0,
-  } = location.state || {};
 
   const customLabel = (label) => (
     <span style={{ 
@@ -70,169 +80,132 @@ const ModificaProfilo = () => {
     </span>
   );
 
-  const [initialData, setInitialData] = useState({
-    username,
-    email,
-    role,
-    avatarUrl: avatar || DEFAULT_AVATAR,
-    createdAt: created_at,
-    punteggio: punteggio
-  });
-
-  useEffect(() => {
-    if (username && email !== null) {
-      form.setFieldsValue({
-        username,
-        email,
-        role,
-        password: "",
-        punteggio: null,
-      });
-      setInitialData({
-        username,
-        email,
-        role,
-        avatarUrl: avatar || DEFAULT_AVATAR,
-        createdAt: created_at,
-        punteggio: punteggio,
-      });
-      setAvatarUrl(avatar || DEFAULT_AVATAR);
-    }
-  }, [form, username, email, role, avatar, created_at, punteggio]);
+  // Gestisce il cambiamento dei campi del form
+  const handleFormChange = () => {
+    const currentValues = form.getFieldsValue();
+    const changed = currentValues.username !== initialValues.username;
+    setIsFormChanged(changed);
+  };
 
   const handleUpdateProfile = async () => {
     setLoading(true);
-    const user = JSON.parse(localStorage.getItem("user"));
     const userId = user ? user.id : null;
-
+  
     if (!userId) {
       message.error("ID utente non trovato");
       setLoading(false);
       return;
     }
-
+  
     try {
-      const response = await axios.put(`${apiUrl}/api/users/${userId}`, {
+      const updatedData = {
         username: form.getFieldValue("username"),
-        email: form.getFieldValue("email"),
-        punteggio: form.getFieldValue("punteggio"),
-        avatar: avatarUrl, // Usa l'avatar appena caricato
-        password: form.getFieldValue("password") || undefined,
-      });
-
-      message.success("Profilo aggiornato con successo");
-
-      // Aggiorna il localStorage con i nuovi dati
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-      }
-
-      const updatedUser = {
-        ...JSON.parse(localStorage.getItem("user")),
-        ...response.data.user,
       };
-
+  
+      // 1. Chiamata API per aggiornare il database
+      const response = await axios.put(`${apiUrl}/api/users/${userId}`, updatedData);
+  
+      // 2. Aggiorna lo stato locale
+      const updatedUser = {
+        ...user,
+        username: updatedData.username,
+      };
+      
+      // 3. Aggiorna localStorage
       localStorage.setItem("user", JSON.stringify(updatedUser));
-
-      // Aggiornamento completo delle informazioni visualizzate
-      setInitialData({
-        ...initialData,
-        username: form.getFieldValue("username"),
-        punteggio: form.getFieldValue("punteggio"),
-      });
-      navigate("/", { replace: true });
-      window.location.reload();
+      
+      // 4. Aggiorna lo stato dell'applicazione
+      setUser(updatedUser);
+      
+      // 5. Mostra messaggio di successo
+      message.success("Profilo aggiornato con successo");
+      
+      // 6. Naviga verso la home dopo un breve delay per far vedere il messaggio
+      setTimeout(() => {
+        navigate("/", {
+          state: { 
+            userUpdated: true,
+            username: updatedData.username 
+          }
+        });
+      }, 1000);
+      
     } catch (error) {
       console.error("Errore durante l'aggiornamento", error);
-      message.error("Errore durante l'aggiornamento del profilo");
+      message.error(error.response?.data?.message || "Errore durante l'aggiornamento del profilo");
     } finally {
       setLoading(false);
     }
   };
-
-  // Funzione che gestisce il cambiamento dell'username
-  const handleUsernameChange = (e) => {
-    const newUsername = e.target.value;
-    setIsUsernameChanged(newUsername !== initialData.username); // Controlla se l'username è cambiato
-  };
-
+  
   return (
     <div style={backgroundStyle}>
       <div style={containerStyle}>
-      <Row gutter={24}>
-        <Col xs={24} md={8}>
-          <Space direction="vertical" align="center" style={{ width: "100%" }}>
-            <Avatar
-              size={128}
-              src={avatarUrl}
-              alt="Avatar utente"
-              style={{ marginTop: 70 }}
-              className="border-4 border-white shadow-lg"
-            />
-
-            <h3
-              className="text-xl font-bold text-white mb-1"
-              style={{ marginTop: 20, }}
-            >
-              {initialData.username}
-            </h3>
-            <p className="text-indigo-200 mb-6">{initialData.email}</p>
-            <h4 className="text-lg text-white mb-2">Punteggio</h4>
-            <p className="text-white mt-2" style={{fontSize:25}}>{punteggio}</p>
-
-            <Divider className="border-indigo-400" />
-          </Space>
-        </Col>
-
-        {/* Area Contenuto Principale */}
-        <Col xs={24} md={16}>
-          <h2 className="text-2xl font-bold mb-8 mt-4" style={{marginTop:80, marginBottom:50, fontSize:25}}>Modifica Profilo</h2>
-
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleUpdateProfile}
-            className="space-y-4"
-            requiredMark={false}
-            initialValues={{
-              username: initialData.username,
-              email: initialData.email,
-              password: "",
-            }}
-          >
-            <Form.Item
-              name="username"
-              label={customLabel("Username")}
-              rules={[{ required: true, message: "Inserisci il tuo username" }]}
-
-            >
-              <Input
-                prefix={<UserOutlined className="text-gray-400" />}
-                placeholder="Username"
-                size="large"
-                onChange={handleUsernameChange} // Aggiungi la gestione del cambiamento dell'username
+        <Row gutter={24}>
+          <Col xs={24} md={8}>
+            <Space direction="vertical" align="center" style={{ width: "100%" }}>
+              <Avatar
+                size={128}
+                src={avatarUrl}
+                alt="Avatar utente"
+                style={{ marginTop: 70 }}
+                className="border-4 border-white shadow-lg"
               />
-            </Form.Item>
 
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 border-0"
-                size="large"
-                loading={loading}
-                style={{color:"white"}}
-                block
-                disabled={!isUsernameChanged} // Disabilita il pulsante se l'username non è stato cambiato
-              >
-                Salva Modifiche
-              </Button>
+              <h3 className="text-xl font-bold text-white mb-1" style={{ marginTop: 20 }}>
+                {user?.username || "Utente"}
+              </h3>
+              <p className="text-indigo-200 mb-6">{user?.email || ""}</p>
+              <h4 className="text-lg text-white mb-2">Punteggio</h4>
+              <p className="text-white mt-2" style={{fontSize:25}}>{user?.punteggio || 0}</p>
 
+              <Divider className="border-indigo-400" />
             </Space>
-          </Form>
-        </Col>
-      </Row>
-    </div>
+          </Col>
+
+          <Col xs={24} md={16}>
+            <h2 className="text-2xl font-bold mb-8 mt-4" style={{marginTop:80, marginBottom:50, fontSize:25}}>Modifica Profilo</h2>
+
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={handleUpdateProfile}
+              className="space-y-4"
+              requiredMark={false}
+              initialValues={initialValues}
+              onValuesChange={handleFormChange}
+            >
+              <Form.Item
+                name="username"
+                label={customLabel("Username")}
+                rules={[{ required: true, message: "Inserisci il tuo username" }]}
+              >
+                <Input
+                  prefix={<UserOutlined className="text-gray-400" />}
+                  placeholder="Username"
+                  size="large"
+                />
+              </Form.Item>
+
+
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 border-0"
+                  size="large"
+                  loading={loading}
+                  style={{color:"white"}}
+                  block
+                  disabled={!isFormChanged}
+                >
+                  Salva Modifiche
+                </Button>
+              </Space>
+            </Form>
+          </Col>
+        </Row>
+      </div>
     </div>
   );
 };

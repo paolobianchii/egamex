@@ -65,6 +65,11 @@ function Teams() {
   const [teams, setTeams] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false); // Stato per la modale
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
+  const [game1, setGame1] = useState(0);
+  const [game2, setGame2] = useState(0);
+  const [game3, setGame3] = useState(0);
+  const [game4, setGame4] = useState(0);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -104,32 +109,38 @@ function Teams() {
       message.error("Nome del team e almeno un partecipante sono obbligatori.");
       return;
     }
-
+  
     const newTeam = {
       name: teamName,
       num_participants: selectedUsers,
       score: teamScore,
       numParticipants: selectedUsers.length,
+      game1,
+      game2,
+      game3,
+      game4,
     };
-
+  
     try {
       setLoading(true);
       const response = await axios.post(`${apiUrl}/api/teams`, newTeam);
-
+  
       if (response.status === 201) {
         message.success("Team creato con successo!");
-        const createdTeam = response.data; // Assumiamo che il backend restituisca il team creato con l'ID
-
-        // Aggiungiamo il team creato alla lista dei team esistenti
-        setTeams([...teams, createdTeam]); // Aggiorniamo la lista dei team
-
-        setIsModalVisible(false); // Chiudi la modale dopo la creazione
-        setTeamName(""); // Resetta il nome del team
-        setSelectedUsers([]); // Resetta i partecipanti
-        setTeamScore(0); // Resetta il punteggio
-        window.location.reload(); // Ricarica la pagina
+  
+        // Ricarica i team dalla API per assicurarci che i dati siano aggiornati
+        const updatedTeams = await axios.get(`${apiUrl}/api/teams`);
+        setTeams(updatedTeams.data);
+  
+        setIsModalVisible(false);
+        setTeamName("");
+        setSelectedUsers([]);
+        setTeamScore(0);
+        setGame1(0);
+        setGame2(0);
+        setGame3(0);
+        setGame4(0);
       } else {
-        // Se la risposta non è 201, mostra un errore generico
         message.error("Si è verificato un errore nella creazione del team.");
       }
     } catch (error) {
@@ -139,6 +150,7 @@ function Teams() {
       setLoading(false);
     }
   };
+  
 
   const handleDelete = (deletedTeamId) => {
     setTeams(teams.filter((team) => team.id !== deletedTeamId)); // Rimuove il team dalla lista
@@ -149,16 +161,51 @@ function Teams() {
       title: "Nome del Team",
       dataIndex: "name",
       key: "name",
+      render: (text) => <span style={{ fontWeight: 600, fontSize: 16, float:"left", textAlign:"left" }}>{text}</span>
+
     },
+    
     {
-      title: "Punteggio",
-      dataIndex: "score",
-      key: "score",
-    },
-    {
-      title: "Numero di Partecipanti",
+      title: "Partecipanti",
       dataIndex: "num_participants",
       key: "num_participants",
+    },
+    {
+      title: "Game1",
+      dataIndex: "game1",
+      key: "game1",
+      render: (text) => <span style={{ fontWeight: 500, fontSize: 16 }}>{text}</span>
+
+    },
+    {
+      title: "Game2",
+      dataIndex: "game2",
+      key: "game2",
+      render: (text) => <span style={{ fontWeight: 500, fontSize: 16 }}>{text}</span>
+
+    },
+    {
+      title: "Game3",
+      dataIndex: "game3",
+      key: "game3",
+      render: (text) => <span style={{ fontWeight: 500, fontSize: 16 }}>{text}</span>
+
+    },
+    {
+      title: "Game4",
+      dataIndex: "game4",
+      key: "game4",
+      render: (text) => <span style={{ fontWeight: 500, fontSize: 16 }}>{text}</span>
+
+    },
+    {
+      title: "Totale",
+      key: "punteggio",
+      render: (text, record) => (
+        <span style={{ fontWeight: 800, fontSize: 18, color:"violet" }}>
+          {(record.game1 || 0) + (record.game2 || 0) + (record.game3 || 0) + (record.game4 || 0)}
+        </span>
+      ),
     },
     {
       title: "Azioni",
@@ -251,14 +298,18 @@ function Teams() {
                   </Select>
                 </Form.Item>
 
-                <Form.Item label="Punteggio del Team" required>
-                  <Input
-                    type="number"
-                    value={teamScore}
-                    onChange={(e) => setTeamScore(Number(e.target.value))}
-                    placeholder="Inserisci il punteggio del team"
-                  />
-                </Form.Item>
+                <Form.Item label="Game1" required>
+            <Input type="number" value={game1} onChange={(e) => setGame1(Number(e.target.value))} placeholder="Punteggio Game 1" />
+          </Form.Item>
+          <Form.Item label="Game2" required>
+            <Input type="number" value={game2} onChange={(e) => setGame2(Number(e.target.value))} placeholder="Punteggio Game 2" />
+          </Form.Item>
+          <Form.Item label="Game3" required>
+            <Input type="number" value={game3} onChange={(e) => setGame3(Number(e.target.value))} placeholder="Punteggio Game 3" />
+          </Form.Item>
+          <Form.Item label="Game4" required>
+            <Input type="number" value={game4} onChange={(e) => setGame4(Number(e.target.value))} placeholder="Punteggio Game 4" />
+          </Form.Item>
 
                 <Form.Item>
                   <Button type="primary" htmlType="submit" block>

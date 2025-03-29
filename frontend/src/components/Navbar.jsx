@@ -429,11 +429,39 @@ const Navbar = () => {
 
       {/* Sovrapposizione di "Accesso in corso" o "Logout in corso" */}
       {(isLoggingIn || isLoggingOut) && (
-        <div className="loading-overlay">
-          <Spin size="large" />
-          <p>{isLoggingIn ? "Accesso in corso..." : "Logout in corso..."}</p>
-        </div>
-      )}
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    backdropFilter: 'blur(4px)',
+    color: 'white'
+  }}>
+    <Spin 
+      size="large" 
+      style={{ 
+        color: '#1890ff',
+        marginBottom: '20px',
+        fontSize: '48px'
+      }} 
+    />
+    <p style={{
+      fontSize: '18px',
+      fontWeight: 500,
+      marginTop: '16px',
+      color: 'rgba(255, 255, 255, 0.9)'
+    }}>
+      {isLoggingIn ? "Accesso in corso..." : "Logout in corso..."}
+    </p>
+  </div>
+)}
     </Header>
   );
 };
