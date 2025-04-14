@@ -29,7 +29,12 @@ app.use(helmet());
 app.use(xss()); 
 
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+  origin: ['https://egamex.netlify.app', 'http://localhost:5173'], // Aggiungi altri domini se necessario
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Middleware per gestire la sessione utente
