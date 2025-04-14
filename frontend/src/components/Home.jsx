@@ -14,8 +14,21 @@ import {
   Spin,
 } from "antd";
 import axios from "axios";
-import { CalendarOutlined } from "@ant-design/icons"; // Importa l'icona
-import debounce from "lodash.debounce"; // Importa il debounce
+import {
+  CalendarOutlined,
+  TrophyOutlined,
+  TeamOutlined,
+  ClockCircleOutlined,
+  InfoCircleOutlined,
+  SettingOutlined,
+  ControlOutlined,
+  ControlFilled,
+  GifOutlined,
+  GiftFilled,
+  CodeFilled,
+  EyeOutlined,
+} from "@ant-design/icons";
+import debounce from "lodash.debounce";
 import { Breadcrumb } from "antd";
 import { HomeOutlined } from "@ant-design/icons";
 import Footer from "./Footer";
@@ -27,384 +40,183 @@ const { Meta } = Card;
 const Home = () => {
   const [tornei, setTornei] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(""); // Stato per la ricerca
+  const [visible, setVisible] = useState(false);
+  const [currentTorneo, setCurrentTorneo] = useState(null);
+  const [viewMode, setViewMode] = useState("team"); // team or player
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
-  const [showTeams, setShowTeams] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState(null); // Stato per l'utente loggato
-  const [isLoginVisible, setIsLoginVisible] = useState(false); // Stato per la modale di login
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [partecipanti, setPartecipanti] = useState([]);
-  const [loadingPartecipanti, setLoadingPartecipanti] = useState(false);
-  const [loadingTeams, setLoadingTeams] = useState(false);
-  const [torneoId, setTorneoId] = useState(null); // Definisci lo stato torneoId
-  const [error, setError] = useState(null);
-  const [torneoSelezionato, setTorneoSelezionato] = useState(null);
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      console.log("User from localStorage:", parsedUser); // Debug per verificare
-      setUser(parsedUser);
-    } else {
-      console.log("No user found in localStorage");
-    }
-  }, []);
-
-  useEffect(() => {
-    console.log("User state updated:", user);  // Verifica se user cambia correttamente
-  }, [user]);
-
-  const openModal = async (torneo) => {
-    if (!torneo) return;
-  
-    setTorneoSelezionato(torneo);
-    setLoadingPartecipanti(true);
-    setIsModalVisible(true);
-  
-    try {
-      const response = await axios.get(
-        `${apiUrl}/api/partecipanti/${torneo.id}`
-      );
-  
-      if (Array.isArray(response.data) && response.data.length > 0) {
-        // Aggiungi il campo user_score a ciascun partecipante
-        const partecipantiConPunteggio = response.data.map(partecipante => ({
-          ...partecipante,
-          user_score: partecipante.user?.punteggio || 0
-        }));
-        setPartecipanti(partecipantiConPunteggio);
-      } else {
-        setPartecipanti([]);
-      }
-    } catch (error) {
-      console.error("Errore nel recupero delle partecipazioni:", error);
-    } finally {
-      setLoadingPartecipanti(false);
-    }
-  };
-
-  const fetchTournaments = async () => {
-    try {
-      setLoading(true); // Avvia il loading quando si inizia a caricare i tornei
-      const response = await axios.get(`${apiUrl}/api/tournaments`);
-      setTornei(response.data); // Imposta i tornei quando sono stati recuperati
-    } catch (error) {
-      console.error("Errore nel recupero dei tornei:", error);
-    } finally {
-      setLoading(false); // Ferma il loading una volta che i dati sono stati caricati
-    }
-  };
 
   useEffect(() => {
     fetchTournaments();
   }, []);
 
-  
+  const fetchTournaments = async () => {
+    try {
+      setLoading(true);
 
-  const getRankedLeaderboard = (partecipanti) => {
-    // Calcola punteggio sommando i game + il punteggio dell'utente (user_score)
-    const playersWithScore = partecipanti.map(player => ({
-      ...player,
-      punteggio: (player.game1 || 0) + 
-                (player.game2 || 0) + 
-                (player.game3 || 0) + 
-                (player.game4 || 0) +
-                (player.user_score || 0) // Questo è il punteggio dalla tabella users
-    }));
-  
-    // Ordina per punteggio decrescente
-    const sortedPlayers = playersWithScore.sort((a, b) => b.punteggio - a.punteggio);
-  
-    let lastPunteggio = null;
-    let lastRank = 0;
-    let skipRank = 0;
-  
-    return sortedPlayers.map((player, index) => {
-      if (player.punteggio === lastPunteggio) {
-        skipRank++;
-      } else {
-        lastRank += 1 + skipRank;
-        skipRank = 0;
-      }
-  
-      lastPunteggio = player.punteggio;
-  
-      return { 
-        ...player, 
-        posizione: lastRank,
-        // Aggiungi esplicitamente il punteggio utente se vuoi mostrarlo separatamente
-        punteggio_utente: player.user_score || 0
-      };
-    });
+      // 1. Recupera i tornei
+      const responseTornei = await axios.get(`${apiUrl}/api/battle-royale`);
+      const torneiData = responseTornei.data;
+
+      // 2. Recupera tutte le partecipazioni
+      const responsePartecipazioni = await axios.get(
+        `${apiUrl}/api/partecipazioni`
+      );
+      const partecipazioniData = responsePartecipazioni.data;
+
+      // 3. Recupera tutte le informazioni sugli utenti
+      const responseUtenti = await axios.get(`${apiUrl}/api/users`);
+      const utentiData = responseUtenti.data;
+
+      // 4. Aggiungi i partecipanti ai tornei
+      const torneoConPartecipanti = torneiData.map((torneo) => {
+        // Filtra le partecipazioni per il torneo corrente
+        const partecipazioniTorneo = partecipazioniData.filter(
+          (partecipazione) => partecipazione.torneo_id === torneo.id
+        );
+
+        // Mappa le partecipazioni con le informazioni sugli utenti (username e punteggio)
+        const partecipantiConInfo = partecipazioniTorneo.map(
+          (partecipazione) => {
+            const utente = utentiData.find(
+              (utente) => utente.id === partecipazione.utente_id
+            );
+
+            // Crea un oggetto con i punteggi per ogni round
+            const roundScores = {};
+            if (torneo.rounds) {
+              for (let i = 1; i <= torneo.rounds; i++) {
+                roundScores[`round_${i}`] = partecipazione[`round_${i}`] || 0;
+              }
+            }
+
+            return {
+              username: utente ? utente.username : "Unknown",
+              punteggio: partecipazione.punteggio,
+              ...roundScores,
+            };
+          }
+        );
+
+        return {
+          ...torneo,
+          partecipanti: partecipantiConInfo,
+          roundCount: torneo.rounds || 0, // Usa il campo rounds dal torneo
+        };
+      });
+
+      setTornei(torneoConPartecipanti);
+    } catch (error) {
+      console.error("Errore nel recupero dei tornei o partecipazioni:", error);
+    } finally {
+      setLoading(false);
+    }
   };
-  
 
-  const rankedPlayers = getRankedLeaderboard(partecipanti);
+  // Modifica le colonne della tabella per includere i round
+  const getPartecipantiColumns = (roundCount) => {
+    const baseColumns = [
+      {
+        title: "Giocatore",
+        dataIndex: "username",
+        key: "username",
+        render: (text) => <span style={{ color: "#d8b4fe" }}>{text}</span>,
+        fixed: "left",
+      },
+    ];
+
+    // Aggiungi colonne per ogni round
+    for (let i = 1; i <= roundCount; i++) {
+      baseColumns.push({
+        title: `Game ${i}`,
+        dataIndex: `round_${i}`,
+        key: `round_${i}`,
+        align: "center",
+        render: (score) => (
+          <Badge
+            count={score}
+            style={{
+              backgroundColor: score > 0 ? "#6a3093" : "#4c1d95",
+              color: "#fff",
+            }}
+          />
+        ),
+      });
+    }
+
+    // Aggiungi colonna punteggio totale
+    baseColumns.push({
+      title: "Totale",
+      dataIndex: "punteggio",
+      key: "punteggio",
+      align: "center",
+      fixed: "right",
+      render: (score) => (
+        <span
+          style={{
+            color: "#fff",
+            fontWeight: "bold",
+            background: "linear-gradient(135deg, #7e22ce 0%, #6a3093 100%)",
+            padding: "4px 12px",
+            borderRadius: "16px",
+            boxShadow: "0 2px 8px rgba(122, 40, 206, 0.4)",
+          }}
+        >
+          {score}
+        </span>
+      ),
+    });
+
+    return baseColumns;
+  };
+
+  const openModal = (torneo) => {
+    setCurrentTorneo(torneo);
+    setVisible(true);
+  };
+
+  const closeModal = () => {
+    setVisible(false);
+  };
+
+  const switchView = (checked) => {
+    setViewMode(checked ? "player" : "team");
+  };
 
   const columns = [
     {
-      title: (
-        <span style={{ color: "#FFA500", fontWeight: "bold" }}>Posizione</span>
-      ),
-      dataIndex: "posizione",
-      key: "posizione",
-      render: (text) => (
-        <span style={{ color: "white", fontWeight: "bold" }}>{text}</span>
-      ),
+      title: viewMode === "team" ? "Team" : "Giocatore",
+      dataIndex: viewMode === "team" ? "team" : "player",
     },
     {
-      title: (
-        <span style={{ color: "#00FF00", fontWeight: "bold" }}>Username</span>
-      ),
-      dataIndex: "username",
-      key: "username",
-      render: (text) => (
-        <span style={{ color: "white", fontWeight: "bold" }}>
-          {text || "N/A"}
-        </span>
-      ),
+      title: "Posizione",
+      dataIndex: "position",
     },
     {
-      title: (
-        <span style={{ color: "#FF4500", fontWeight: "bold" }}>Game 1</span>
-      ),
-      dataIndex: "game1",
-      key: "game1",
-      render: (int) => (
-        <span style={{ color: "white", fontWeight: "bold" }}>
-    {int !== undefined ? int : "N/A"}
-    </span>
-      ),
-    },
-    {
-      title: (
-        <span style={{ color: "#1E90FF", fontWeight: "bold" }}>Game 2</span>
-      ),
-      dataIndex: "game2",
-      key: "game2",
-      render: (int) => (
-        <span style={{ color: "white", fontWeight: "bold" }}>
-    {int !== undefined ? int : "N/A"}
-    </span>
-      ),
-    },
-    {
-      title: (
-        <span style={{ color: "purple", fontWeight: "bold" }}>Punteggio Utente</span>
-      ),
-      dataIndex: "punteggio_utente",
-      key: "punteggio_utente",
-      render: (int) => (
-        <span style={{ color: "white", fontWeight: "bold" }}>
-          {int !== undefined ? int : "N/A"}
-        </span>
-      ),
-    },
-    {
-      title: (
-        <span style={{ color: "gold", fontWeight: "bold" }}>Punteggio Totale</span>
-      ),
+      title: "Punteggio",
       dataIndex: "punteggio",
-      key: "punteggio",
-      render: (int) => (
-        <span
-          style={{
-            color: "gold",
-            fontWeight: "bold",
-            textShadow: "0px 0px 10px rgba(255, 215, 0, 0.8)",
-          }}
-        >
-          {int !== undefined ? int : "N/A"}
-        </span>
-      ),
     },
   ];
 
-  const teamColumns = [
+  const data = currentTorneo
+    ? viewMode === "team"
+      ? currentTorneo.teamLeaderboard
+      : currentTorneo.playerLeaderboard
+    : [];
+
+  // Nuove colonne per la tabella dei partecipanti
+  const partecipantiColumns = [
     {
-      title: (
-        <span style={{ color: "#FFA500", fontWeight: "bold" }}>Posizione</span>
-      ),
-      dataIndex: "posizione",
-      key: "posizione",
-      render: (text) => (
-        <span style={{ color: "white", fontWeight: "bold" }}>{text}</span>
-      ),
+      title: "Giocatore",
+      dataIndex: "username",
     },
     {
-      title: (
-        <span style={{ color: "#00FF00", fontWeight: "bold" }}>Nome Team</span>
-      ),
-      dataIndex: "name",
-      key: "name",
-      render: (text) => (
-        <span style={{ color: "white", fontWeight: "bold" }}>
-          {text || "N/A"}
-        </span>
-      ),
-    },
-    {
-      title: (
-        <span style={{ color: "gold", fontWeight: "bold" }}>Punteggio</span>
-      ),
-      dataIndex: "score",
-      key: "score",
-      render: (int) => (
-        <span
-          style={{
-            color: "gold",
-            fontWeight: "bold",
-            textShadow: "0px 0px 10px rgba(255, 215, 0, 0.8)",
-          }}
-        >
-          {int || "0"}
-        </span>
-      ),
+      title: "Punteggio",
+      dataIndex: "punteggio",
     },
   ];
 
-  useEffect(() => {
-    if (!partecipanti || partecipanti.length === 0) {
-      console.log("⚠️ Nessun partecipante trovato o dati non disponibili.");
-    } else {
-      console.log(
-        `✅ Partecipanti trovati (${partecipanti.length}):`,
-        partecipanti
-      );
-    }
-  }, [partecipanti]);
-  const [isTeamView, setIsTeamView] = useState(false); // Stato per gestire la vista (team o utenti)
-  const [teams, setTeams] = useState([]); // Stato per i dati dei team
-
-  useEffect(() => {
-    if (isTeamView) {
-      fetch(`${apiUrl}/api/teams`)
-        .then((response) => response.json())
-        .then((data) => setTeams(data));
-    }
-  }, [isTeamView]);
-
-
-  const handleIscrizione = async () => {
-    // Verifica che l'utente sia loggato
-    if (!user || !user.id || !user.role) {
-      notification.error({
-        message: "Errore",
-        description: "Devi essere registrato per iscriverti a questo torneo.",
-        duration: 3,
-      });
-      return;
-    }
-  
-    // Logica per l'iscrizione
-    const torneoId = torneoSelezionato?.id;
-    const createdAt = torneoSelezionato?.created_at;
-    const punteggio = 0;
-  
-    try {
-      // Verifica se l'utente è già iscritto al torneo
-      const checkResponse = await axios.get(`${apiUrl}/api/partecipazioni/${torneoId}/utente/${user.id}`);
-      if (checkResponse.data.iscrizione) {
-        notification.info({
-          message: "Sei già iscritto",
-          description: "Non puoi iscriverti più di una volta a questo torneo.",
-          duration: 3,
-        });
-        return; // Non eseguire l'iscrizione se già iscritto
-      }
-  
-      // Aggiungi la partecipazione se non è già presente
-      const response = await axios.post(`${apiUrl}/api/partecipazioni/${torneoId}`, {
-        torneo_id: torneoId,
-        utente_id: user.id,
-        punteggio: punteggio,
-        created_at: createdAt,
-      });
-  
-      if (response.status === 200 && response.data) {
-        setPartecipanti((prevPartecipanti) => [...prevPartecipanti, response.data]);
-        notification.success({
-          message: "Iscrizione completata",
-          description: "Sei stato iscritto al torneo con punteggio 0.",
-          duration: 3,
-        });
-      } else {
-        notification.error({
-          message: "Errore",
-          description: "Non è stato possibile completare l'iscrizione.",
-          duration: 3,
-        });
-      }
-    } catch (error) {
-      console.error("Errore nell'iscrizione:", error);
-      notification.error({
-        message: "Errore",
-        description: error.response?.data?.message || "Si è verificato un problema durante l'iscrizione.",
-        duration: 3,
-      });
-    }
-  };
-  
-
-  // Funzione debounce per gestire la ricerca
-  const handleSearchChange = debounce((value) => {
-    setSearchTerm(value);
-  }, 100); // Ritarda di 500ms prima di aggiornare lo stato
-
-  const currentDate = new Date();
-  const fiveDaysAgo = new Date(currentDate);
-  fiveDaysAgo.setDate(currentDate.getDate() - 5);
-  const futureTornei = [];
-  const inCorsoTornei = [];
-  const passatiTornei = [];
-
-  // Assicurati che `tornei` sia un array prima di eseguire il ciclo
-  if (Array.isArray(tornei)) {
-    tornei.forEach((torneo) => {
-      // Assicurati che `torneo.data` sia una data valida
-      const torneoDate = new Date(torneo.data);
-
-      // Verifica che la data del torneo sia valida
-      if (isNaN(torneoDate)) {
-        console.error(`Data del torneo non valida: ${torneo.data}`);
-        return; // Salta questo torneo se la data non è valida
-      }
-
-      // Confronta le date
-      if (torneoDate > currentDate) {
-        futureTornei.push(torneo); // Tornei futuri
-      } else if (torneoDate >= fiveDaysAgo) {
-        inCorsoTornei.push(torneo); // Tornei in corso
-      } else {
-        passatiTornei.push(torneo); // Tornei passati
-      }
-    });
-  } else {
-    console.error("tornei non è un array valido:", tornei);
-  }
-
-  const getDaysRemaining = (torneoDate) => {
-    const diffTime = torneoDate - currentDate;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // Usa Math.floor per evitare il problema del giorno parziale
-    return diffDays;
-  };
-
-  const getTimeRemaining = (torneoDate) => {
-    // Calcola la data di scadenza (5 giorni dopo la data del torneo)
-    const expirationDate = new Date(torneoDate);
-    expirationDate.setDate(torneoDate.getDate() + 5); // Aggiungi 5 giorni
-
-    const diffTime = expirationDate - currentDate;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // Giorni
-    const diffHours = Math.floor(
-      (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-    ); // Ore
-    const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60)); // Minuti
-
-    return `${diffDays} giorni ${diffHours}h ${diffMinutes}m`;
-  };
+  // Dati della tabella dei partecipanti
+  const partecipantiData = currentTorneo ? currentTorneo.partecipanti : [];
 
   return (
     <div
@@ -425,496 +237,369 @@ const Home = () => {
           minHeight: "100vh",
         }}
       >
-        {/* Barra di ricerca visibile solo su desktop */}
-        <div style={{ display: "none", marginBottom: "20px" }}>
-          <Input
-            placeholder="Cerca tornei"
-            value={searchTerm}
-            onChange={handleSearchChange}
-            style={{
-              width: "300px",
-              marginBottom: "20px",
-              display: "block",
-              marginLeft: "auto",
-              marginRight: "auto",
-            }}
-          />
-        </div>
-
-        <Row gutter={16} style={{ marginBottom: "40px", marginTop: 70 }}>
-          <Modal
-            open={isModalVisible}
-            onCancel={() => setIsModalVisible(false)}
-            footer={null}
-            width="90vw"
-            className="tournament-modal"
-            maskClassName="custom-mask"
-            destroyOnClose
-            style={{
-              borderRadius: "12px",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            <div
-              style={{
-                textAlign: "center",
-                marginBottom: "20px",
-              }}
+        <Row gutter={[16, 16]} style={{ marginTop: 70, marginBottom: 30 }}>
+          <Col xs={24} style={{ textAlign: "center", marginBottom: 20 }}>
+            <h1
+              style={{ color: "#fff", fontSize: "2.5rem", fontWeight: "bold" }}
             >
-              <span
-                style={{
-                  color: "#00FFFF",
-                  fontWeight: "bold",
-                  fontSize: "28px",
-                  letterSpacing: "1px",
-                  textTransform: "uppercase",
-                }}
-              >
-                {torneoSelezionato?.titolo}
-              </span>
-            </div>
+              <TrophyOutlined style={{ marginRight: 10 }} />
+              Tornei Attivi
+            </h1>
+          </Col>
 
-            {/* Image Section */}
-            <div
-              style={{
-                marginBottom: "30px",
-                textAlign: "center",
-              }}
-            >
-              <img
-                src={
-                  torneoSelezionato?.image ||
-                  "https://wallpapers.com/images/hd/futuristic-spacecraft-battle-scene-in-outer-space-zyttyd8mqpke0qf4.jpg"
+          {loading ? (
+            <Col span={24} style={{ textAlign: "center" }}>
+              <Spin size="large" />
+            </Col>
+          ) : tornei.length === 0 ? (
+            <Col span={24} style={{ textAlign: "center" }}>
+              <Empty
+                description={
+                  <span style={{ color: "#ccc", fontSize: "1.2rem" }}>
+                    Nessun torneo attivo al momento
+                  </span>
                 }
-                alt="Tournament Image"
-                style={{
-                  width: "40%",
-                  maxHeight: "300px",
-                  objectFit: "cover",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 20px rgba(0, 255, 255, 0.2)",
-                }}
               />
-            </div>
-
-            {/* Switch Tab Section */}
-            <div style={{ marginBottom: "20px", textAlign: "center" }}>
-              <span
-                style={{
-                  color: "#00FFFF",
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                  marginRight: "10px",
-                }}
-              >
-                Visualizza:
-              </span>
-              <Switch
-                checked={isTeamView}
-                onChange={(checked) => setIsTeamView(checked)}
-                checkedChildren="Teams"
-                unCheckedChildren="Users"
-                style={{
-                  backgroundColor: "#00FFFF",
-                  borderRadius: "50px",
-                  padding: "1px 5px",
-                }}
-              />
-            </div>
-            {/*
-            {user && user.id ? (
-        user.role === "user" ? (
-          <Button
-            type="primary"
-            style={{
-              backgroundColor: "#00FFFF",
-              border: "none",
-              fontSize: "16px",
-              fontWeight: "bold",
-              padding: "10px 20px",
-            }}
-            onClick={handleIscrizione}
-          >
-            Iscriviti al torneo
-          </Button>
-        ) : (
-          <p style={{ color: "#fff" }}></p>
-        )
-      ) : (
-        <p style={{ color: "#fff" }}></p>
-      )}
-*/}
-
-            {/* Data Table Section */}
-            <div
-              style={{
-                background: "linear-gradient(145deg, #111, #000)",
-                padding: "25px",
-                borderRadius: "12px",
-                boxShadow: "0 4px 12px rgba(0, 255, 255, 0.3)",
-              }}
-            >
-              <Table
-                dataSource={isTeamView ? teams : rankedPlayers}
-                columns={isTeamView ? teamColumns : columns}
-                rowKey="id"
-                loading={isTeamView ? loadingTeams : loadingPartecipanti}
-                scroll={{ y: 400 }}
-                locale={{
-                  emptyText: (
-                    <Empty
-                      description={
-                        <span style={{ color: "#ccc", fontSize: "16px" }}>
-                          {isTeamView
-                            ? "Nessun team registrato"
-                            : "Nessun partecipante registrato"}
-                        </span>
-                      }
-                    />
-                  ),
-                }}
-                rowClassName={(record, index) => {
-                  if (index === 0) return "top1";
-                  if (index === 1) return "top2";
-                  if (index === 2) return "top3";
-                  return "";
-                }}
-                style={{
-                  background: "#222",
-                  borderRadius: "10px",
-                  overflow: "hidden",
-                }}
-                pagination={false}
-                bordered
-              />
-            </div>
-          </Modal>
-
-          {/* Tornei in corso */}
-          <Col span={24} md={12}>
-            <div
-              style={{
-                background: "rgba(15, 14, 23, 0.1)", // Colore di sfondo quasi trasparente
-                backdropFilter: "blur(10px)", // Effetto di sfocatura dietro il div
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)", // Ombra
-                padding: "20px", // Aggiungi padding per distanziare il contenuto dal bordo
-                borderRadius: "8px", // Per arrotondare gli angoli
-                border: "0.1px solid #493473", // Bordo
-              }}
-            >
-              <h4
-                style={{
-                  color: "white",
-                  textAlign: "left",
-                  marginBottom: "20px",
-                  fontSize: 28,
-                  marginLeft: 5,
-                  fontWeight: "700",
-                }}
-              >
-                Tornei in corso ({inCorsoTornei.length})
-              </h4>
-              <Row gutter={16}>
-                {loading && (
-                  <div
-                    style={{
-                      position: "absolute", // Posizionamento assoluto rispetto al contenitore
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      backgroundColor: "rgba(0, 0, 0, 0.7)",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      zIndex: -2,
-                    }}
-                  >
-                    <div className="loading-spinner">
-                      <Spin size="large" />
-                      <span>Caricamento tornei...</span>
-                    </div>
-                  </div>
-                )}
-                {loading ? (
-                  <div className="loading-spinner">
-                    <Spin size="large" />
-                    <span>Loading tornei...</span>
-                  </div>
-                ) : inCorsoTornei.length > 0 ? (
-                  inCorsoTornei.map((torneo) => (
-                    <Col span={24} sm={12} md={18} lg={12} key={torneo.id}>
-                      <Card
-                        hoverable
-                        style={{ marginBottom: "20px" }}
-                        cover={
-                          <img
-                            alt={torneo.titolo}
-                            src={
-                              torneo.image ||
-                              "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG"
-                            } // Default image URL
-                            style={{ height: "150px", objectFit: "cover" }}
-                          />
+            </Col>
+          ) : (
+            tornei.map((torneo) => (
+              <Col xs={24} sm={12} md={8} lg={6} key={torneo.id}>
+                <Card
+                  hoverable
+                  style={{
+                    borderRadius: "12px",
+                    background: "linear-gradient(to bottom, #2a0a4a, #1a052a)",
+                    border: "1px solid #6a3093",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    boxShadow: "0 4px 12px rgba(106, 48, 147, 0.3)",
+                    transition: "all 0.3s ease",
+                  }}
+                  bodyStyle={{
+                    padding: "16px",
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                  cover={
+                    <div style={{ position: "relative" }}>
+                      <img
+                        alt={torneo.titolo}
+                        src={
+                          torneo.image ||
+                          "https://wallpapers.com/images/hd/futuristic-spacecraft-battle-scene-in-outer-space-zyttyd8mqpke0qf4.jpg"
                         }
+                        style={{
+                          height: "180px",
+                          width: "100%",
+                          objectFit: "cover",
+                          borderTopLeftRadius: "12px",
+                          borderTopRightRadius: "12px",
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background:
+                            "linear-gradient(to bottom, rgba(42,10,74,0.3), rgba(26,5,42,0.7))",
+                        }}
+                      ></div>
+                    </div>
+                  }
+                  onClick={() => openModal(torneo)}
+                >
+                  <Meta
+                    title={
+                      <span
+                        style={{
+                          color: "#d8b4fe",
+                          fontSize: "1.2rem",
+                          fontWeight: "bold",
+                          textShadow: "0 0 8px rgba(216, 180, 254, 0.3)",
+                          marginBottom: "12px",
+                          display: "block",
+                        }}
                       >
-                        {/* Badge sopra l'immagine */}
+                        {torneo.titolo}
+                      </span>
+                    }
+                    description={
+                      <div style={{ color: "#a78bfa", flex: 1 }}>
                         <div
                           style={{
-                            position: "absolute",
-                            top: "10px",
-                            left: "10px",
-                            backgroundColor: "#ff4d4f",
-                            color: "white",
-                            padding: "3px 8px",
-                            borderRadius: "8px",
-                            fontWeight: "bold",
-                            fontSize: 12,
+                            marginBottom: 12,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
                           }}
                         >
-                          {`Scade tra ${getTimeRemaining(
-                            new Date(torneo.data)
-                          )}`}
-                        </div>
-                        <Meta
-                          title={
-                            <h3
-                              style={{
-                                fontWeight: "700",
-                                fontSize: "18px",
-                                color: "#282828",
-                              }}
-                            >
-                              {torneo.titolo}
-                            </h3>
-                          }
-                          description={
-                            <Badge
-                              count={`${torneo.modalita}`}
-                              style={{
-                                backgroundColor: "#282828", // Colore del badge (puoi cambiarlo)
-                                color: "white", // Colore del testo
-                                padding: "12px", // Padding per fare un po' di spazio attorno al testo
-                                display: "flex",
-                                marginTop: -20,
-                                justifyContent: "center",
-                                alignItems: "center",
-                                borderRadius: "6px", // Per rendere gli angoli arrotondati
-                                fontSize: "12px", // Regola la dimensione del font
-                              }}
-                            />
-                          }
-                        />
-                        <div style={{ marginTop: 15, marginBottom: 15 }}>
-                          <span style={{ fontSize: 11 }}>
-                            {new Date(torneo.data).toLocaleString("it-IT", {
-                              weekday: "long", // Giorno della settimana
-                              year: "numeric", // Anno
-                              month: "long", // Mese
-                              day: "numeric", // Giorno
-                              hour: "2-digit", // Ora (due cifre)
-                            })}
-                          </span>
-                        </div>
-
-                        <Button
-                          style={{ width: "100%" }}
-                          type="primary"
-                          onClick={() => openModal(torneo)}
-                          disabled={
-                            new Date(torneo.data).getTime() <=
-                            currentDate.getTime() - 5 * 24 * 60 * 60 * 1000 // 5 giorni fa
-                          }
-                        >
-                          {new Date(torneo.data).getTime() <=
-                          currentDate.getTime() - 5 * 24 * 60 * 60 * 1000
-                            ? "Scaduto"
-                            : new Date(torneo.data).getTime() >
-                              currentDate.getTime()
-                            ? `Partecipa tra ${getDaysRemaining(
-                                new Date(torneo.data)
-                              )} giorni` // Torneo futuro
-                            : `Partecipa`}
-                        </Button>
-                      </Card>
-                    </Col>
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: "bold",
-                      color: "#fff",
-                      textAlign: "center",
-                      background: "rgba(0, 0, 0, 0.6)", // Sfondo scuro semi-trasparente
-                      padding: "30px", // Spazio attorno al testo
-                      borderRadius: "10px", // Angoli arrotondati
-                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)", // Ombra leggera
-                      maxWidth: "400px", // Larghezza massima
-                      margin: "0 auto", // Centra il contenuto
-                      transition: "all 0.3s ease", // Transizione per animazioni
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      marginTop: 30,
-                    }}
-                  >
-                    Non ci sono tornei in corso
-                  </div>
-                )}
-              </Row>
-            </div>
-          </Col>
-
-          {/* Tornei a breve */}
-          <Col span={24} md={12}>
-            {loading && (
-              <div
-                style={{
-                  position: "absolute", // Posizionamento assoluto rispetto al contenitore
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-                  backgroundColor: "rgba(0, 0, 0, 0.7)",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  zIndex: 9999,
-                }}
-              >
-                <h2 style={{ color: "#fff", fontSize: "24px" }}>
-                  Caricamento tornei...
-                </h2>
-              </div>
-            )}
-            <div
-              style={{
-                background: "rgba(15, 14, 23, 0.1)", // Colore di sfondo quasi trasparente
-                backdropFilter: "blur(10px)", // Effetto di sfocatura dietro il div
-                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)", // Ombra
-                padding: "20px", // Aggiungi padding per distanziare il contenuto dal bordo
-                borderRadius: "8px", // Per arrotondare gli angoli
-                border: "0.1px solid #493473", // Bordo
-              }}
-            >
-              <h4
-                style={{
-                  color: "white",
-                  textAlign: "left",
-                  marginBottom: "20px",
-                  fontSize: 28,
-                  marginLeft: 5,
-                  fontWeight: "700",
-                }}
-              >
-                A breve ({futureTornei.length})
-              </h4>
-              <Row gutter={16}>
-                {futureTornei.length > 0 ? (
-                  futureTornei.map((torneo) => (
-                    <Col span={24} sm={12} md={18} lg={12} key={torneo.id}>
-                      <Card
-                        hoverable
-                        style={{ marginBottom: "20px" }}
-                        cover={
-                          <img
-                            alt={torneo.titolo}
-                            src={
-                              torneo.image ||
-                              "https://cdn.prod.website-files.com/64479cbddbde2b42cebe552a/66d565dbfd64573a736e040a_esdp.PNG"
-                            } // Default image URL
-                            style={{ height: "150px", objectFit: "cover" }}
+                          <CalendarOutlined
+                            style={{
+                              color: "#c084fc",
+                              fontSize: 16,
+                            }}
                           />
-                        }
-                      >
-                        <Meta
-                          title={
-                            <h3
-                              style={{
-                                fontWeight: "700",
-                                fontSize: "18px",
-                                color: "#282828",
-                              }}
-                            >
-                              {torneo.titolo}
-                            </h3>
-                          }
-                          description={
-                            <Badge
-                              count={`${torneo.modalita}`}
-                              style={{
-                                backgroundColor: "#282828", // Colore del badge (puoi cambiarlo)
-                                color: "white", // Colore del testo
-                                padding: "12px", // Padding per fare un po' di spazio attorno al testo
-                                display: "flex",
-                                marginTop: -20,
-                                justifyContent: "center",
-                                alignItems: "center",
-                                borderRadius: "6px", // Per rendere gli angoli arrotondati
-                                fontSize: "12px", // Regola la dimensione del font
-                              }}
-                            />
-                          }
-                        />
-                        <div style={{ marginTop: 15, marginBottom: 15 }}>
-                          <span style={{ fontSize: 11 }} className="text-muted">
-                            {new Date(torneo.data).toLocaleString("it-IT", {
-                              weekday: "long", // Giorno della settimana
-                              year: "numeric", // Anno
-                              month: "long", // Mese
-                              day: "numeric", // Giorno
-                              hour: "2-digit", // Ora (due cifre)
-                            })}
-                          </span>
+                          {new Date(torneo.data_inizio).toLocaleDateString(
+                            "it-IT",
+                            { day: "numeric", month: "long", year: "numeric" }
+                          )}
                         </div>
-                        <Button
-                          type="primary"
-                          disabled={
-                            new Date(torneo.data).toLocaleDateString() !==
-                            currentDate.toLocaleDateString()
-                          }
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            marginBottom: 16,
+                          }}
                         >
-                          {new Date(torneo.data).toLocaleDateString() ===
-                          currentDate.toLocaleDateString()
-                            ? "Partecipa"
-                            : `Mancano ${getDaysRemaining(
-                                new Date(torneo.data)
-                              )} giorni`}
-                        </Button>
-                      </Card>
-                    </Col>
-                  ))
-                ) : (
-                  <div
+                          <ClockCircleOutlined
+                            style={{
+                              color: "#c084fc",
+                              fontSize: 16,
+                            }}
+                          />
+                          {torneo.orario_torneo}
+                        </div>
+                      </div>
+                    }
+                  />
+                  <Button
+                    type="primary"
                     style={{
-                      fontSize: "18px",
+                      marginTop: "auto",
+                      width: "100%",
+                      background: "linear-gradient(to right, #7e22ce, #6a3093)",
+                      border: "none",
                       fontWeight: "bold",
                       color: "#fff",
-                      textAlign: "center",
-                      background: "rgba(0, 0, 0, 0.6)", // Sfondo scuro semi-trasparente
-                      padding: "30px", // Spazio attorno al testo
-                      borderRadius: "10px", // Angoli arrotondati
-                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)", // Ombra leggera
-                      maxWidth: "400px", // Larghezza massima
-                      margin: "0 auto", // Centra il contenuto
-                      transition: "all 0.3s ease", // Transizione per animazioni
+                      height: "40px",
+                      borderRadius: "8px",
+                      boxShadow: "0 2px 8px rgba(122, 40, 206, 0.4)",
                       display: "flex",
-                      justifyContent: "center",
                       alignItems: "center",
-                      marginTop: 30,
+                      justifyContent: "center",
+                      gap: "8px",
+                      transition: "all 0.2s",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openModal(torneo);
                     }}
                   >
-                    Non ci sono tornei a breve
-                  </div>
-                )}
-              </Row>
-            </div>
-          </Col>
+                    <EyeOutlined />
+                    Dettagli
+                  </Button>
+                </Card>
+              </Col>
+            ))
+          )}
         </Row>
 
-        <MarqueeGiochi />
+        {/* Modal per dettagli torneo */}
+        <Modal
+          open={visible}
+          onCancel={closeModal}
+          footer={null}
+          width={800}
+          style={{ top: 20 }}
+          bodyStyle={{
+            backgroundColor: "#1a052a",
+            color: "#ffffff",
+            padding: 0,
+          }}
+          headerStyle={{
+            backgroundColor: "#2a0a4a",
+            color: "#ffffff",
+            borderBottom: "1px solid #6a3093",
+          }}
+        >
+          <div
+            style={{
+              backgroundImage: `url(${
+                currentTorneo?.image ||
+                "https://wallpapers.com/images/hd/futuristic-spacecraft-battle-scene-in-outer-space-zyttyd8mqpke0qf4.jpg"
+              })`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              position: "relative",
+              height: "300px",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background:
+                  "linear-gradient(to bottom, rgba(42,10,74,0.7), rgba(26,5,42,0.9))",
+              }}
+            ></div>
+            <div
+              style={{
+                position: "absolute",
+                bottom: 20,
+                left: 20,
+                color: "#fff",
+                zIndex: 1,
+              }}
+            >
+              <h1
+                style={{
+                  color: "#fff",
+                  fontSize: 32,
+                  textShadow: "0 0 10px rgba(255,255,255,0.3)",
+                  margin: 0,
+                }}
+              >
+                {currentTorneo?.titolo}
+              </h1>
+            </div>
+          </div>
 
+          <Row gutter={[16, 16]} style={{ marginTop: 20, padding: "0 20px" }}>
+            <Col span={24}>
+              <h2
+                style={{
+                  color: "#d8b4fe",
+                  fontSize: 24,
+                  borderBottom: "2px solid #6a3093",
+                  paddingBottom: 8,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <TrophyOutlined style={{ color: "#fbbf24" }} /> Classifica
+                Giocatori
+              </h2>
+              <Table
+                columns={getPartecipantiColumns(currentTorneo?.roundCount || 0)}
+                dataSource={currentTorneo?.partecipanti || []}
+                rowKey="username"
+                pagination={false}
+                style={{
+                  backgroundColor: "transparent",
+                }}
+                rowClassName={() => "gaming-table-row"}
+                scroll={{ x: true }}
+                bordered
+              />
+            </Col>
+          </Row>
+
+          <div
+            style={{
+              marginTop: 30,
+              padding: "20px",
+              background: "linear-gradient(to right, #2a0a4a, #1a052a)",
+              borderTop: "1px solid #6a3093",
+              borderBottom: "1px solid #6a3093",
+            }}
+          >
+            <Row gutter={[24, 16]} align="middle">
+              <Col xs={24} sm={8}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <CodeFilled
+                    style={{
+                      fontSize: 24,
+                      color: "#a78bfa",
+                      backgroundColor: "#4c1d95",
+                      padding: 8,
+                      borderRadius: 8,
+                    }}
+                  />
+                  <div>
+                    <div style={{ color: "#a78bfa", fontSize: 14 }}>Gioco</div>
+                    <div
+                      style={{ color: "#fff", fontSize: 18, fontWeight: 500 }}
+                    >
+                      {currentTorneo?.nome_gioco}
+                    </div>
+                  </div>
+                </div>
+              </Col>
+
+              <Col xs={24} sm={8}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <SettingOutlined
+                    style={{
+                      fontSize: 24,
+                      color: "#a78bfa",
+                      backgroundColor: "#4c1d95",
+                      padding: 8,
+                      borderRadius: 8,
+                    }}
+                  />
+                  <div>
+                    <div style={{ color: "#a78bfa", fontSize: 14 }}>
+                      Modalità
+                    </div>
+                    <div
+                      style={{ color: "#fff", fontSize: 18, fontWeight: 500 }}
+                    >
+                      {currentTorneo?.type}
+                    </div>
+                  </div>
+                </div>
+              </Col>
+
+              <Col xs={24} sm={8}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <InfoCircleOutlined
+                    style={{
+                      fontSize: 24,
+                      color: "#a78bfa",
+                      backgroundColor: "#4c1d95",
+                      padding: 8,
+                      borderRadius: 8,
+                    }}
+                  />
+                  <div>
+                    <div style={{ color: "#a78bfa", fontSize: 14 }}>
+                      Informazioni
+                    </div>
+                    <div style={{ color: "#fff", fontSize: 14 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <CalendarOutlined />
+                        {new Date(
+                          currentTorneo?.data_inizio
+                        ).toLocaleDateString("it-IT", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <ClockCircleOutlined /> {currentTorneo?.orario_torneo}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </div>
+        </Modal>
+
+        <MarqueeGiochi />
         <Footer />
       </div>
     </div>

@@ -15,6 +15,8 @@ import GestioneTornei from "./components/GestioneTornei";
 import GestioneUtenti from "./components/GestioneUtenti";
 import Teams from "./components/Teams";
 import TeamDetails from "./components/TeamDetails";
+import GestioneGiochi from "./components/GestioneGiochi";
+import GestioneAdmin from "./components/GestioneAdmin";
 
 const { Content } = Layout;
 
@@ -48,6 +50,24 @@ const App = () => {
                   element={
                     <PrivateRoute
                       element={<GestioneTornei />}
+                      roleRequired="admin"
+                    />
+                  }
+                />
+                <Route
+                  path="/gestione-giochi"
+                  element={
+                    <PrivateRoute
+                      element={<GestioneGiochi />}
+                      roleRequired="admin"
+                    />
+                  }
+                />
+                <Route
+                  path="/gestione-admin"
+                  element={
+                    <PrivateRoute
+                      element={<GestioneAdmin />}
                       roleRequired="admin"
                     />
                   }

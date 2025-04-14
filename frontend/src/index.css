@@ -42,11 +42,43 @@
   color: white !important;
 }
 
+.gaming-table-row {
+  background-color: rgba(42, 10, 74, 0.5) !important;
+  color: #fff !important;
+  border-bottom: 1px solid #6a3093 !important;
+}
+
+.gaming-table-row:hover td {
+  background-color: rgba(106, 48, 147, 0.7) !important;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #4c1d95 !important;
+  color: #d8b4fe !important;
+  border-bottom: 1px solid #6a3093 !important;
+}
+
+.ant-modal-close {
+  color: #a78bfa !important;
+}
+
+.ant-modal-close:hover {
+  color: #d8b4fe !important;
+}
 
 .breadcrumb-item {
   color: #000 !important; /* Colore del testo dell'elemento */
 }
+/* Aggiungi questo al tuo CSS globale */
+.ant-card-hoverable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(106, 48, 147, 0.5) !important;
+  border-color: #8b5cf6 !important;
+}
 
+.ant-card-bordered {
+  border-color: #6a3093 !important;
+}
 .breadcrumb-icon {
   color: #fff !important; /* Colore dell'icona */
 }

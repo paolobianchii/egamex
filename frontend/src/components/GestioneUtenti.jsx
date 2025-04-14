@@ -216,7 +216,7 @@ const GestioneUtenti = () => {
           {/* Modale per creare utente */}
           <Modal
             title="Crea Nuovo Utente"
-            visible={isModalVisible}
+            open={isModalVisible}
             onOk={handleCreateUser}
             onCancel={() => setIsModalVisible(false)}
             confirmLoading={loading}

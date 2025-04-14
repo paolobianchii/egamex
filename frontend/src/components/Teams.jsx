@@ -260,7 +260,7 @@ function Teams() {
           {/* Modale per la creazione del team */}
           <Modal
             title="Crea un Nuovo Team"
-            visible={isModalVisible}
+            open={isModalVisible}
             onCancel={() => setIsModalVisible(false)} // Chiude la modale
             footer={null} // Rimuove il footer predefinito della modale
             width={600}

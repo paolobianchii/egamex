@@ -165,7 +165,7 @@ const Login = () => {
 
       <Modal
         title="Accedi o Registrati"
-        visible={isModalVisible}
+        open={isModalVisible}
         onCancel={handleCancel}
         footer={null}
         width={400}

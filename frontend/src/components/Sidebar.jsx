@@ -30,6 +30,8 @@ import {
   LinkedinOutlined,
   LinkedinFilled,
   DiscordFilled,
+  GiftOutlined,
+  UserSwitchOutlined,
 } from "@ant-design/icons";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { useNavigate } from "react-router-dom";
@@ -205,6 +207,34 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
             fontWeight: "500",
             color: "#FFFFFF",
             backgroundColor: selectedKey === "5" ? "#8A2BE2" : "transparent", // Solo se selezionato
+            borderRadius: "8px",
+            transition: "background-color 0.3s",
+          },
+        },
+        {
+          key: "6",
+          icon: <GiftOutlined style={{ fontSize: 20 }} />,
+          label: "Giochi",
+          onClick: () => handleMenuClick("6", "gestione-giochi"),
+          style: {
+            fontSize: 16,
+            fontWeight: "500",
+            color: "#FFFFFF",
+            backgroundColor: selectedKey === "6" ? "#8A2BE2" : "transparent", // Solo se selezionato
+            borderRadius: "8px",
+            transition: "background-color 0.3s",
+          },
+        },
+        {
+          key: "7",
+          icon: <UserSwitchOutlined style={{ fontSize: 20 }} />,
+          label: "Admin",
+          onClick: () => handleMenuClick("7", "gestione-admin"),
+          style: {
+            fontSize: 16,
+            fontWeight: "500",
+            color: "#FFFFFF",
+            backgroundColor: selectedKey === "7" ? "#8A2BE2" : "transparent", // Solo se selezionato
             borderRadius: "8px",
             transition: "background-color 0.3s",
           },

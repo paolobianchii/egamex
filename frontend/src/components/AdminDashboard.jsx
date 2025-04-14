@@ -160,69 +160,7 @@ const AdminDashboard = () => {
             </Col>
             
           </Row>
-          <br></br>
-          <h1 style={{color:"#fff"}}> Anteprima tornei</h1>
-          <Row gutter={[16, 16]}>
-          {tournaments.map((tournament) => (
-            <Col key={tournament.id} xs={24} sm={12} md={8} lg={6} xl={6}>
-              <Card
-                hoverable
-                cover={<img alt={tournament.titolo} src={tournament.image} style={{ height: 120, objectFit: "cover" }} />}
-                style={{
-                  backgroundColor: "#fff",
-                  borderRadius: 10,
-                  color: "#fff",
-                  boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
-                  height: 260, // Imposta un'altezza fissa per uniformare le card
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-                headStyle={{ color: "#fff", fontWeight: "bold", fontSize: "18px" }}
-              >
- <Meta
-                          title={
-                            <h3
-                              style={{
-                                fontWeight: "700",
-                                fontSize: "18px",
-                                color: "#282828",
-                              }}
-                            >
-                              {tournament.titolo}
-                            </h3>
-                          }
-                          description={
-                            <Badge
-                              count={`${tournament.modalita}`}
-                              style={{
-                                backgroundColor: "#282828", // Colore del badge (puoi cambiarlo)
-                                color: "white", // Colore del testo
-                                padding: "12px", // Padding per fare un po' di spazio attorno al testo
-                                display: "flex",
-                                marginTop: -20,
-                                justifyContent: "center",
-                                alignItems: "center",
-                                borderRadius: "6px", // Per rendere gli angoli arrotondati
-                                fontSize: "12px", // Regola la dimensione del font
-                              }}
-                            />
-                          }
-                        />
-                        <div style={{ marginTop: 5, marginBottom: 10 }}>
-                          <span style={{ fontSize: 11, color:"#282828" }}>
-                            {new Date(tournament.data).toLocaleString("it-IT", {
-                              year: "numeric", // Anno
-                              month: "long", // Mese
-                              day: "numeric", // Giorno
-                            })}
 
-                          </span>
-                        </div>                
-              </Card>
-            </Col>
-          ))}
-        </Row>
         </Content>
       </Layout>
     </Layout>
