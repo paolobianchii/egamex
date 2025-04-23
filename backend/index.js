@@ -17,6 +17,10 @@ const path = require("path");
 const helmet = require("helmet");
 const xss = require("xss-clean");
 const axios = require("axios");
+const { validate: validateUUID } = require('uuid-validate');
+const { v4: uuidv4 } = require('uuid');
+
+
 
 dotenv.config(); 
 
@@ -419,103 +423,6 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-app.get("/api/partecipanti/:torneoId", cacheMiddleware, async (req, res) => {
-  const { torneoId } = req.params;
-
-  try {
-      const { data, error } = await supabase
-.from('partecipazioni')
-.select('id, torneo_id, utente_id, created_at, game1, punteggio, users(id, username, email)')
-.eq('torneo_id', torneoId);
-
-
-      if (error) throw error;
-
-      // Rispondi con i dati dei partecipanti
-      res.json(data.map(p => ({
-          partecipazione_id: p.id, // id della partecipazione
-          utente_id: p.utente_id,   // id dell'utente
-          username: p.users.username,
-          email: p.users.email,
-          punteggio: p.punteggio,
-          game1: p.game1,
-      })));
-  } catch (err) {
-      res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/teams', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('teams')  // Nome della tua tabella
-      .select('*');  // Seleziona tutte le colonne
-
-    if (error) {
-      return res.status(500).json({ message: 'Errore nel recupero dei dati', error });
-    }
-
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(500).json({ message: 'Errore del server', error });
-  }
-});
-
-app.get('/api/teams/:id', async (req, res) => {
-  try {
-    const { id } = req.params;  // Prendi l'ID dalla rotta
-
-    // Recupera il team specifico con l'ID
-    const { data, error } = await supabase
-      .from('teams')
-      .select('*')
-      .eq('id', id)  // Filtra il team per ID
-      .single();  // Assicurati che venga restituito un solo team (in caso di ricerca univoca)
-
-    if (error) {
-      return res.status(500).json({ message: 'Errore nel recupero del team', error });
-    }
-
-    if (!data) {
-      return res.status(404).json({ message: 'Team non trovato' });
-    }
-
-    // Recupera i partecipanti, se necessario (se sono in una tabella separata)
-    const { data: participants, error: participantsError } = await supabase
-      .from('users')  // Tabella dei partecipanti
-      .select('username')
-      .in('id', data.participants);  // Supponiamo che 'participants' sia un array di ID
-
-    if (participantsError) {
-      return res.status(500).json({ message: 'Errore nel recupero dei partecipanti', participantsError });
-    }
-
-    // Includi i partecipanti nei dettagli del team
-    res.status(200).json({ ...data, participants: participants || [] });
-  } catch (error) {
-    res.status(500).json({ message: 'Errore del server', error });
-  }
-});
-app.delete('/api/teams/:id', async (req, res) => {
-  try {
-    const { id } = req.params;  // Ottieni l'ID del team dalla rotta
-
-    // Elimina il team con l'ID specificato
-    const { error } = await supabase
-      .from('teams')
-      .delete()
-      .eq('id', id);  // Filtra per l'ID del team
-
-    if (error) {
-      return res.status(500).json({ message: 'Errore nell\'eliminazione del team', error });
-    }
-
-    // Se non c'è errore, invia una risposta di successo
-    res.status(200).json({ message: 'Team eliminato con successo' });
-  } catch (error) {
-    res.status(500).json({ message: 'Errore del server', error });
-  }
-});
 
 app.get('/api/battle-royale', async (req, res) => {
   try {
@@ -629,6 +536,81 @@ app.put('/api/battle-royale/:id', async (req, res) => {
   }
 });
 
+app.post("/api/partecipazioni", async (req, res) => {
+  const { torneo_id, team_id } = req.body;
+
+  // Validazione avanzata con logging
+  console.log("Dati ricevuti:", { torneo_id, team_id });
+
+  if (!team_id) {
+    return res.status(400).json({
+      error: "ID team mancante",
+      solution: "Includi un ID team valido nel corpo della richiesta"
+    });
+  }
+
+  if (!validateUUID(team_id)) {
+    return res.status(400).json({
+      error: "Formato ID team non valido",
+      details: {
+        valore_ricevuto: team_id,
+        formato_richiesto: "UUID v4 (esempio: '123e4567-e89b-12d3-a456-426614174000')",
+        lunghezza_attesa: 36,
+        lunghezza_ricevuta: team_id?.length || 0
+      }
+    });
+  }
+
+  // Resto del codice invariato...
+  try {
+    // Verifica esistenza team
+    const { data: team, error: teamError } = await supabase
+      .from('teams')
+      .select('id')
+      .eq('id', team_id)
+      .single();
+
+    if (teamError || !team) {
+      return res.status(404).json({
+        error: "Team non trovato",
+        team_id_provided: team_id,
+        action_required: "Creare prima il team o verificare l'ID"
+      });
+    }
+
+    // Procedi con la creazione della partecipazione...
+    const { data, error } = await supabase
+      .from('partecipazioni')
+      .insert([{
+        torneo_id,
+        team_id,
+        punti_totali: 0,
+        penalita: 0
+      }])
+      .select('*');
+
+    if (error) throw error;
+
+    res.status(201).json({
+      success: true,
+      partecipazione: data[0]
+    });
+
+  } catch (error) {
+    console.error("Errore durante la creazione:", error);
+    res.status(500).json({
+      error: "Errore interno del server",
+      debug_info: {
+        received_data: req.body,
+        validation: {
+          torneo_id_valid: validateUUID(torneo_id),
+          team_id_valid: validateUUID(team_id)
+        }
+      }
+    });
+  }
+});
+
 app.post('/api/battle-royale', async (req, res) => {
   const {
     titolo,
@@ -673,31 +655,174 @@ app.post('/api/battle-royale', async (req, res) => {
 
 // Endpoint per creare un team
 app.post('/api/teams', async (req, res) => {
-  const { name, participants, score, numParticipants, game1, game2, game3, game4 } = req.body;
+  const { name, score = 0 } = req.body;
 
-  // Inserimento del team nella tabella
+  const uuid = uuidv4(); // genera UUID nel backend
+
   try {
     const { data, error } = await supabase.from('teams').insert([
       {
+        id: uuid,
         name,
         score,
-        num_participants: numParticipants,
-        game1,
-        game2,
-        game3,
-        game4,
         created_at: new Date(),
         updated_at: new Date(),
       },
-    ]);
+    ]).select();
 
     if (error) throw error;
 
-    res.status(201).json({ message: 'Team creato con successo', team: data });
+    res.status(201).json({
+      message: 'Team creato con successo',
+      id: uuid, // restituisci l'UUID generato
+      team: data[0],
+    });
   } catch (error) {
     res.status(500).json({ message: 'Errore nella creazione del team', error });
   }
 });
+
+app.get('/api/teams', async (req, res) => {
+  try {
+    // Fetch all teams from the database
+    const { data: teamsData, error: teamsError } = await supabase
+      .from('teams')
+      .select('*')
+      .order('name');
+    
+    if (teamsError) throw teamsError;
+
+    // Fetch user-team relationships from a separate table
+    // Assuming you have a team_members table that links users and teams
+    const { data: teamMembershipsData, error: membershipError } = await supabase
+      .from('partecipazioni') // Update this to your actual junction table name
+      .select('team_id, torneo_id');
+    
+    if (membershipError) throw membershipError;
+
+    // Fetch all users to get their details
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('id, username');
+    
+    if (usersError) throw usersError;
+
+    // Map team members to their teams
+    const teamsWithMembers = teamsData.map(team => {
+      // Find all membership records for this team
+      const teamMemberships = teamMembershipsData.filter(
+        membership => membership.team_id === team.id
+      );
+      
+      // Find the users that correspond to these memberships
+      const members = teamMemberships.map(membership => {
+        const user = usersData.find(user => user.id === membership.user_id);
+        return user ? { id: user.id, username: user.username } : null;
+      }).filter(member => member !== null); // Remove any nulls
+      
+      return {
+        ...team,
+        members: members,
+        member_count: members.length
+      };
+    });
+
+    res.status(200).json(teamsWithMembers);
+  } catch (error) {
+    console.error('Error fetching teams:', error);
+    res.status(500).json({ 
+      message: 'Errore nel recupero dei team', 
+      error: error.message 
+    });
+  }
+});
+
+// Alternative implementation if you don't have a junction table
+// Uncomment and use this if your structure is different
+/*
+app.get('/api/teams', async (req, res) => {
+  try {
+    // Fetch all teams
+    const { data: teamsData, error: teamsError } = await supabase
+      .from('teams')
+      .select('*')
+      .order('name');
+    
+    if (teamsError) throw teamsError;
+    
+    // Return teams without member info if we can't link them
+    res.status(200).json(teamsData.map(team => ({
+      ...team,
+      members: [],
+      member_count: 0
+    })));
+  } catch (error) {
+    console.error('Error fetching teams:', error);
+    res.status(500).json({ 
+      message: 'Errore nel recupero dei team', 
+      error: error.message 
+    });
+  }
+});
+*/
+
+// Get team by ID
+app.get('/api/teams/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Get team data
+    const { data: teamData, error: teamError } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (teamError) throw teamError;
+    
+    if (!teamData) {
+      return res.status(404).json({ message: 'Team non trovato' });
+    }
+
+    // Get team memberships from the junction table
+    const { data: membershipsData, error: membershipsError } = await supabase
+      .from('team_members') // Update this to your actual junction table name
+      .select('user_id')
+      .eq('team_id', id);
+    
+    if (membershipsError) throw membershipsError;
+
+    // Get user details for team members
+    let members = [];
+    if (membershipsData && membershipsData.length > 0) {
+      const userIds = membershipsData.map(m => m.user_id);
+      
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, username')
+        .in('id', userIds);
+      
+      if (usersError) throw usersError;
+      members = usersData || [];
+    }
+
+    // Combine data
+    const teamWithMembers = {
+      ...teamData,
+      members: members,
+      member_count: members.length
+    };
+
+    res.status(200).json(teamWithMembers);
+  } catch (error) {
+    console.error('Error fetching team:', error);
+    res.status(500).json({ 
+      message: 'Errore nel recupero del team', 
+      error: error.message 
+    });
+  }
+});
+
 // Avvio del server
 const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

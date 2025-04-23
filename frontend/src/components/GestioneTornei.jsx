@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { v4 as uuidv4 } from 'uuid';
 import {
   HomeOutlined,
   TeamOutlined,
@@ -34,6 +35,8 @@ import {
   Dropdown,
   InputNumber,
   Card,
+  Tooltip,
+  Space,
 } from "antd";
 import moment from "moment"; // Importa moment.js
 import axios from "axios";
@@ -55,6 +58,7 @@ const GestioneTornei = () => {
   const [modalSelectionTracker, setModalSelectionTracker] = useState(null);
   const [games, setGames] = useState([]);
   const [error, setError] = useState(null);
+  const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [isManageModalVisible, setIsManageModalVisible] = useState(false);
   const [isManageModalVisible1, setIsManageModalVisible1] = useState(false);
@@ -64,10 +68,10 @@ const GestioneTornei = () => {
   const [availableTeams, setAvailableTeams] = useState([]);
   const [assignedTeams, setAssignedTeams] = useState([]);
   const [isTeamsRegistered, setIsTeamsRegistered] = useState(false);
-  const allTeamsAssigned = assignedTeams.every((team) => team !== null);
 
   const handleViewTournament = (tournament) => {
     setSelectedTournament(tournament);
+    setIsDetailsModalVisible(true);
   };
   const handleChangeTeams = (e) => {
     const value = parseInt(e.target.value, 10) || 0;
@@ -134,22 +138,64 @@ const GestioneTornei = () => {
   };
 
   const handleManageTournament = async (tournament) => {
-    setSelectedTournament(tournament);
-    setIsManageModalVisible1(true);
-    setIsTeamsRegistered(false); // resetta registrazione
-
     try {
-      const response = await fetch(`${apiUrl}/api/teams`);
-      if (!response.ok) throw new Error("Errore nel fetch dei team");
-      const data = await response.json();
-      setAvailableTeams(data);
-    } catch (error) {
-      console.error(error);
-      message.error("Impossibile caricare i team");
-    }
+      setLoading(true);
+      setSelectedTournament(tournament);
 
-    // Inizializza slot vuoti per i team assegnati
-    setAssignedTeams(Array(tournament.numero_team).fill(null));
+      // 1. Carica in parallelo partecipazioni e team disponibili
+      const [partecipazioniRes, teamsRes] = await Promise.all([
+        axios.get(`${apiUrl}/api/partecipazioni/torneo/${tournament.id}`),
+        axios.get(`${apiUrl}/api/battle-royale`),
+      ]);
+
+      const partecipazioni = await getPartecipazioniWithTeamNames(
+        tournament.id
+      );
+      const allTeams = teamsRes.data || [];
+
+      // 2. Prepara l'array dei team assegnati
+      const assigned = Array(tournament.numero_team).fill(null);
+
+      // 3. Mappa le partecipazioni esistenti
+      if (partecipazioni.length > 0) {
+        const teamMap = allTeams.reduce((map, team) => {
+          map[team.id] = team;
+          return map;
+        }, {});
+
+        partecipazioni.forEach((part) => {
+          const index = part.position - 1; // Converti position (1-based) in index (0-based)
+          if (index >= 0 && index < assigned.length) {
+            assigned[index] = teamMap[part.team_id] || {
+              id: part.team_id,
+              name: `Team ${part.team_id.substring(0, 6)}...`,
+            };
+          }
+        });
+
+        setIsTeamsRegistered(true);
+      } else {
+        setIsTeamsRegistered(false);
+      }
+
+      // 4. Aggiorna gli stati
+      setAvailableTeams(allTeams);
+      setAssignedTeams(assigned);
+      setIsManageModalVisible1(true);
+    } catch (error) {
+      console.error("Errore nel caricamento:", error);
+      message.error(
+        error.response?.data?.error || "Errore nel caricamento dei dati"
+      );
+
+      // Fallback: inizializza comunque gli stati
+      setAvailableTeams([]);
+      setAssignedTeams(Array(selectedTournament?.numero_team || 0).fill(null));
+      setIsTeamsRegistered(false);
+      setIsManageModalVisible1(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditTournament = async (tournament) => {
@@ -190,7 +236,7 @@ const GestioneTornei = () => {
   const handlePointTournament = (tournament) => {
     setSelectedTournament(tournament);
     setIsManageModalVisible(true);
-  
+
     // Solo se i team sono già stati assegnati
     const initialPenalties = {};
     assignedTeams.forEach((team, index) => {
@@ -200,7 +246,6 @@ const GestioneTornei = () => {
     });
     setPenalties(initialPenalties);
   };
-  
 
   const handleAddPenalty = (teamId) => {
     setPenalties((prev) => ({
@@ -235,72 +280,146 @@ const GestioneTornei = () => {
     });
   };
 
-  const roundTabs = selectedTournament?.rounds && isTeamsRegistered
-  ? [
-      ...Array.from({ length: selectedTournament.rounds }, (_, i) => ({
-        key: `${i + 1}`,
-        label: `Round ${i + 1}`,
-        children: (
-          <div style={{ marginTop: 16 }}>
-            <Row gutter={16}>
-              {assignedTeams
-                .filter((team) => team !== null)
-                .map((team, index) => {
-                  const teamId = index + 1;
-                  return (
-                    <Col key={teamId} span={8} style={{ marginBottom: 16 }}>
-                      <Card
-                        title={team.name || `Team ${teamId}`}
-                        size="small"
-                        extra={
-                          <Button
-                            size="small"
-                            onClick={() => handleAddPenalty(teamId)}
-                          >
-                            + Penalità
-                          </Button>
-                        }
-                      >
-                        <InputNumber
-                          defaultValue={0}
-                          style={{ width: "100%", marginBottom: 8 }}
-                        />
-                        {penalties[`team${teamId}`]?.map((penalty) => (
-                          <div key={penalty.id} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                            <InputNumber
-                              value={penalty.value}
-                              onChange={(value) =>
-                                handlePenaltyChange(teamId, penalty.id, "value", value)
-                              }
-                              style={{ width: "60%" }}
-                            />
-                            <Input
-                              value={penalty.reason}
-                              onChange={(e) =>
-                                handlePenaltyChange(teamId, penalty.id, "reason", e.target.value)
-                              }
-                              placeholder="Motivo"
-                              style={{ width: "100%" }}
-                            />
-                            <Button
-                              danger
-                              size="small"
-                              icon={<DeleteOutlined />}
-                              onClick={() => handleRemovePenalty(teamId, penalty.id)}
-                            />
-                          </div>
-                        ))}
-                      </Card>
-                    </Col>
-                  );
-                })}
-            </Row>
-          </div>
-        ),
-      })),
-    ]
-  : [];
+  const getPartecipazioniWithTeamNames = async (torneoId) => {
+    try {
+      const response = await axios.get(
+        `${apiUrl}/api/partecipazioni/torneo/${torneoId}`,
+        {
+          params: {
+            join: "teams", // Questo dipende dal tuo backend
+          },
+        }
+      );
 
+      // I dati dovrebbero arrivare già con team_name incluso
+      return response.data.map((p) => ({
+        ...p,
+        team_name: p.team?.name || `Team ${p.team_id.substring(0, 4)}`,
+      }));
+    } catch (error) {
+      console.error("Errore nel recupero:", error);
+      return [];
+    }
+  };
+
+  // 2. Soluzione alternativa: Mappatura lato frontend
+  const getTeamNamesForPartecipazioni = async (partecipazioni) => {
+    try {
+      // Estrai tutti gli ID team univoci
+      const teamIds = [...new Set(partecipazioni.map((p) => p.team_id))];
+
+      // Recupera i team corrispondenti
+      const response = await axios.get(`${apiUrl}/api/battle-royale`, {
+        params: {
+          ids: teamIds.join(","),
+        },
+      });
+
+      // Crea una mappa ID -> nome team
+      const teamMap = response.data.reduce((acc, team) => {
+        acc[team.id] = team.name;
+        return acc;
+      }, {});
+
+      // Aggiungi i nomi alle partecipazioni
+      return partecipazioni.map((p) => ({
+        ...p,
+        team_name: teamMap[p.team_id] || `Team ${p.team_id.substring(0, 4)}`,
+      }));
+    } catch (error) {
+      console.error("Errore nel recupero team:", error);
+      return partecipazioni.map((p) => ({
+        ...p,
+        team_name: `Team ${p.team_id.substring(0, 4)}`,
+      }));
+    }
+  };
+
+  const roundTabs =
+    selectedTournament?.rounds && isTeamsRegistered
+      ? [
+          ...Array.from({ length: selectedTournament.rounds }, (_, i) => ({
+            key: `${i + 1}`,
+            label: `Round ${i + 1}`,
+            children: (
+              <div style={{ marginTop: 16 }}>
+                <Row gutter={16}>
+                  {assignedTeams
+                    .filter((team) => team !== null)
+                    .map((team, index) => {
+                      const teamId = index + 1;
+                      return (
+                        <Col key={teamId} span={8} style={{ marginBottom: 16 }}>
+                          <Card
+                            title={team.name || `Team ${teamId}`}
+                            size="small"
+                            extra={
+                              <Button
+                                size="small"
+                                onClick={() => handleAddPenalty(teamId)}
+                              >
+                                + Penalità
+                              </Button>
+                            }
+                          >
+                            <InputNumber
+                              defaultValue={0}
+                              style={{ width: "100%", marginBottom: 8 }}
+                            />
+                            {penalties[`team${teamId}`]?.map((penalty) => (
+                              <div
+                                key={penalty.id}
+                                style={{
+                                  display: "flex",
+                                  gap: 8,
+                                  marginBottom: 8,
+                                }}
+                              >
+                                <InputNumber
+                                  value={penalty.value}
+                                  onChange={(value) =>
+                                    handlePenaltyChange(
+                                      teamId,
+                                      penalty.id,
+                                      "value",
+                                      value
+                                    )
+                                  }
+                                  style={{ width: "60%" }}
+                                />
+                                <Input
+                                  value={penalty.reason}
+                                  onChange={(e) =>
+                                    handlePenaltyChange(
+                                      teamId,
+                                      penalty.id,
+                                      "reason",
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="Motivo"
+                                  style={{ width: "100%" }}
+                                />
+                                <Button
+                                  danger
+                                  size="small"
+                                  icon={<DeleteOutlined />}
+                                  onClick={() =>
+                                    handleRemovePenalty(teamId, penalty.id)
+                                  }
+                                />
+                              </div>
+                            ))}
+                          </Card>
+                        </Col>
+                      );
+                    })}
+                </Row>
+              </div>
+            ),
+          })),
+        ]
+      : [];
 
   const handleEditSubmit = async () => {
     try {
@@ -364,6 +483,115 @@ const GestioneTornei = () => {
   const openModeModal = () => {
     setIsModeModalVisible(true);
     setSelectedMode(null);
+  };
+
+  const handleRemoveTeam = async (teamId) => {
+    try {
+      // 1. Recupera l'ID della partecipazione
+      const response = await axios.get(`${apiUrl}/api/partecipazioni`, {
+        params: {
+          torneo_id: selectedTournament.id,
+          team_id: teamId,
+        },
+      });
+
+      if (response.data.length === 0) {
+        throw new Error("Partecipazione non trovata");
+      }
+
+      const partecipazioneId = response.data[0].id;
+
+      // 2. Elimina la partecipazione
+      await axios.delete(`${apiUrl}/api/partecipazioni/${partecipazioneId}`);
+
+      // 3. Aggiorna lo stato locale
+      setAssignedTeams((prev) =>
+        prev.map((t) => (t?.id === teamId ? null : t))
+      );
+
+      message.success("Team rimosso dal torneo");
+      fetchTournaments(); // Aggiorna la lista dei tornei
+    } catch (error) {
+      console.error(error);
+      message.error(
+        error.response?.data?.error || "Errore durante la rimozione del team"
+      );
+    }
+  };
+
+  const handleCreateTeams = async () => {
+    try {
+      setLoading(true);
+  
+      // Verifica che ci sia un torneo selezionato
+      if (!selectedTournament?.id) {
+        throw new Error("Nessun torneo selezionato");
+      }
+  
+      // 1. Creazione dei team con UUID generato prima
+      const createdTeams = await Promise.all(
+        assignedTeams.map(async (team, index) => {
+          if (!team?.name || !team?.players?.length) {
+            throw new Error(`Dati mancanti per il team ${index + 1}`);
+          }
+  
+          // Genera UUID per il team
+          const teamId = uuidv4();
+  
+          // Crea il team nell'API battle-royale con l'ID specificato
+          const teamResponse = await axios.post(`${apiUrl}/api/teams`, {
+            id: teamId, // Invia l'UUID generato
+            name: team.name,
+            players: team.players,
+            score: 0,
+            num_participants: team.players.length,
+            is_active: true,
+          });
+  
+          if (!teamResponse.data?.id) {
+            throw new Error(`Creazione team fallita`);
+          }
+  
+          // Verifica che l'ID restituito corrisponda a quello inviato
+          if (teamResponse.data.id !== teamId) {
+            throw new Error(`ID team non corrisponde`);
+          }
+  
+          return {
+            team_id: teamId, // Usa lo stesso UUID generato
+            position: index + 1,
+          };
+        })
+      );
+  
+      // 2. Creazione delle partecipazioni
+      await Promise.all(
+        createdTeams.map(async (team) => {
+          await axios.post(`${apiUrl}/api/partecipazioni`, {
+            id: uuidv4(), // Genera un nuovo UUID per la partecipazione
+            torneo_id: selectedTournament.id,
+            team_id: team.team_id, // Usa l'UUID del team
+            position: team.position,
+            punti_totali: 0,
+            penalita: 0,
+          });
+        })
+      );
+  
+      message.success("Team e partecipazioni creati con successo!");
+      setIsTeamsRegistered(true);
+      fetchTournaments();
+    } catch (error) {
+      console.error("Errore:", error);
+      message.error(
+        error.response?.data?.error?.solution ||
+          error.response?.data?.message ||
+          error.message ||
+          "Errore durante la creazione"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleModeSelect = (value) => {
@@ -573,13 +801,7 @@ const GestioneTornei = () => {
                     label="Giocatori per Team"
                     rules={[{ required: true }]}
                   >
-                    <Select>
-                      {[5, 10, 15, 20, 25].map((value) => (
-                        <Select.Option key={value} value={value}>
-                          {value}
-                        </Select.Option>
-                      ))}
-                    </Select>
+                    <Input type="number" />
                   </Form.Item>
                   <Form.Item
                     name="rounds"
@@ -889,76 +1111,196 @@ const GestioneTornei = () => {
             onCancel={() => setIsManageModalVisible1(false)}
             footer={null}
             width={800}
+            destroyOnClose
           >
-            <Table
-              dataSource={assignedTeams.map((team, index) => ({
-                key: index,
-                slot: `Slot ${index + 1}`,
-                team,
-              }))}
-              columns={[
-                {
-                  title: "Slot",
-                  dataIndex: "slot",
-                  key: "slot",
-                },
-                {
-                  title: "Team Assegnato",
-                  key: "team",
-                  render: (_, record, rowIndex) => (
-                    <Select
-                      style={{ width: "100%" }}
-                      placeholder="Seleziona un team"
-                      value={record.team?.id || null}
-                      onChange={(teamId) => {
-                        const selectedTeam = availableTeams.find(
-                          (t) => t.id === teamId
-                        );
-                        // Evita duplicati
-                        if (assignedTeams.some((t) => t?.id === teamId)) {
-                          return message.warning(
-                            "Questo team è già stato assegnato"
-                          );
-                        }
-                        const updated = [...assignedTeams];
-                        updated[rowIndex] = selectedTeam;
-                        setAssignedTeams(updated);
-                      }}
-                      allowClear
-                    >
-                      {availableTeams.map((team) => (
-                        <Select.Option key={team.id} value={team.id}>
-                          {team.name}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  ),
-                },
-              ]}
-              pagination={false}
-            />
-            {allTeamsAssigned && (
-  <div style={{ marginTop: 20, textAlign: "right" }}>
-    <Button
-      type="primary"
-      onClick={() => {
-        // Esegui logica per "iscrivere" i team
-        message.success("Team iscritti con successo!");
-        setIsTeamsRegistered(true);
-        setIsManageModalVisible1(false); // chiudi modale
-      }}
-    >
-      Iscrivi Team al Torneo
-    </Button>
-  </div>
-)}
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "24px" }}>
+                <Spin size="large" />
+              </div>
+            ) : isTeamsRegistered ? (
+              <div>
+                <h3 style={{ marginBottom: "16px" }}>
+                  Partecipazioni Registrate
+                </h3>
+                <Table
+                  dataSource={assignedTeams
+                    .filter((team) => team !== null)
+                    .map((team, index) => ({
+                      ...team,
+                      position: index + 1,
+                      key: team.id || index,
+                    }))}
+                  columns={[
+                    {
+                      title: "Posizione",
+                      dataIndex: "position",
+                      key: "position",
+                      render: (position) => (
+                        <Tag
+                          color={
+                            position === 1
+                              ? "gold"
+                              : position === 2
+                              ? "silver"
+                              : position === 3
+                              ? "bronze"
+                              : "default"
+                          }
+                        >
+                          {position}°
+                        </Tag>
+                      ),
+                      align: "center",
+                      width: 100,
+                    },
+                    {
+                      title: "Team",
+                      dataIndex: "team_name",
+                      key: "team_name",
+                      render: (name, record) => (
+                        <Tooltip title={`ID: ${record.team_id}`}>
+                          <span>{name}</span>
+                        </Tooltip>
+                      ),
+                    },
+                    {
+                      title: "Punteggio",
+                      dataIndex: "punti_totali",
+                      key: "punti_totali",
+                      render: (punti) => (
+                        <span style={{ fontWeight: "bold" }}>{punti || 0}</span>
+                      ),
+                      align: "center",
+                    },
+                    {
+                      title: "Azioni",
+                      key: "actions",
+                      render: (_, record) => (
+                        <Space>
+                          <Button
+                            onClick={() => {
+                              // Passa in modalità modifica
+                              setIsTeamsRegistered(false);
+                            }}
+                          >
+                            <EditOutlined />
+                          </Button>
+                          <Button
+                            danger
+                            onClick={() => handleRemoveTeam(record.id)}
+                            icon={<DeleteOutlined />}
+                          />
+                        </Space>
+                      ),
+                      width: 120,
+                    },
+                  ]}
+                  pagination={false}
+                  rowKey="key"
+                  locale={{ emptyText: "Nessuna partecipazione registrata" }}
+                />
 
+                <div style={{ marginTop: "16px", textAlign: "right" }}>
+                  <Button
+                    type="primary"
+                    onClick={() => setIsTeamsRegistered(false)}
+                  >
+                    Aggiungi/Modifica Team
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h3 style={{ marginBottom: "16px" }}>Iscrivi Nuovi Team</h3>
+                <Table
+                  dataSource={Array.from(
+                    { length: selectedTournament?.numero_team || 0 },
+                    (_, i) => ({ key: i })
+                  )}
+                  columns={[
+                    {
+                      title: "Slot",
+                      dataIndex: "slot",
+                      key: "slot",
+                      render: (_, __, index) => `Slot ${index + 1}`,
+                      width: 80,
+                    },
+                    {
+                      title: "Team",
+                      key: "team",
+                      render: (_, __, index) => (
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            flexDirection: "column",
+                          }}
+                        >
+                          <Input
+                            placeholder={`Nome Team ${index + 1}`}
+                            value={assignedTeams[index]?.name || ""}
+                            onChange={(e) => {
+                              const updated = [...assignedTeams];
+                              updated[index] = {
+                                ...(updated[index] || {}),
+                                name: e.target.value,
+                              };
+                              setAssignedTeams(updated);
+                            }}
+                          />
+                          <Select
+                            mode="multiple"
+                            placeholder={`Seleziona ${selectedTournament?.giocatori_per_team} giocatori`}
+                            value={assignedTeams[index]?.players || []}
+                            onChange={(players) => {
+                              const updated = [...assignedTeams];
+                              updated[index] = {
+                                ...(updated[index] || {}),
+                                players,
+                              };
+                              setAssignedTeams(updated);
+                            }}
+                            maxTagCount={selectedTournament?.giocatori_per_team}
+                            style={{ width: "100%" }}
+                          >
+                            {users.map((user) => (
+                              <Select.Option key={user.id} value={user.id}>
+                                {user.username}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </div>
+                      ),
+                    },
+                  ]}
+                  pagination={false}
+                  rowKey="key"
+                />
+
+                <div style={{ marginTop: "16px", textAlign: "right" }}>
+                  <Button
+                    type="primary"
+                    onClick={handleCreateTeams}
+                    disabled={
+                      !assignedTeams.every(
+                        (team) =>
+                          team?.name &&
+                          team?.players?.length ===
+                            selectedTournament?.giocatori_per_team
+                      )
+                    }
+                    loading={loading}
+                  >
+                    Conferma Iscrizioni
+                  </Button>
+                </div>
+              </div>
+            )}
           </Modal>
-
           <Modal
             title="Dettagli Torneo"
-            open={selectedTournament !== null}
-            onCancel={() => setSelectedTournament(null)}
+            open={isDetailsModalVisible}
+            onCancel={() => setIsDetailsModalVisible(false)}
             footer={[
               <Button key="close" onClick={() => setSelectedTournament(null)}>
                 Chiudi
@@ -1038,8 +1380,8 @@ const GestioneTornei = () => {
             <Spin size="large" />
           ) : (
             <Table
-              dataSource={tournaments.filter((tournament) =>
-                tournament.titolo.includes(tournamentFilter)
+              dataSource={tournaments?.filter((tournament) =>
+                tournament.titolo?.includes(tournamentFilter)
               )}
               columns={tournamentColumns}
               rowKey="id"

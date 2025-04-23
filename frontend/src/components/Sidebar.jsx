@@ -198,20 +198,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           },
         },
         {
-          key: "5",
-          icon: <TeamOutlined style={{ fontSize: 20 }} />,
-          label: "Teams",
-          onClick: () => handleMenuClick("5", "teams"),
-          style: {
-            fontSize: 16,
-            fontWeight: "500",
-            color: "#FFFFFF",
-            backgroundColor: selectedKey === "5" ? "#8A2BE2" : "transparent", // Solo se selezionato
-            borderRadius: "8px",
-            transition: "background-color 0.3s",
-          },
-        },
-        {
           key: "6",
           icon: <GiftOutlined style={{ fontSize: 20 }} />,
           label: "Giochi",

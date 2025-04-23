@@ -12,6 +12,7 @@ import {
   Switch,
   notification,
   Spin,
+  Tabs,
 } from "antd";
 import axios from "axios";
 import {
@@ -36,13 +37,14 @@ import imgTorneo from "../assets/torneoImage.png";
 import MarqueeGiochi from "./MarqueeGiochi";
 
 const { Meta } = Card;
+const { TabPane } = Tabs;
 
 const Home = () => {
   const [tornei, setTornei] = useState([]);
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
   const [currentTorneo, setCurrentTorneo] = useState(null);
-  const [viewMode, setViewMode] = useState("team"); // team or player
+  const [viewMode, setViewMode] = useState("player"); // player or team
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
@@ -67,8 +69,12 @@ const Home = () => {
       const responseUtenti = await axios.get(`${apiUrl}/api/users`);
       const utentiData = responseUtenti.data;
 
-      // 4. Aggiungi i partecipanti ai tornei
-      const torneoConPartecipanti = torneiData.map((torneo) => {
+      // 4. Recupera tutte le informazioni sui team
+      const responseTeams = await axios.get(`${apiUrl}/api/teams`);
+      const teamsData = responseTeams.data;
+
+      // 5. Aggiungi i partecipanti e team ai tornei
+      const torneoConDati = torneiData.map((torneo) => {
         // Filtra le partecipazioni per il torneo corrente
         const partecipazioniTorneo = partecipazioniData.filter(
           (partecipazione) => partecipazione.torneo_id === torneo.id
@@ -91,28 +97,78 @@ const Home = () => {
 
             return {
               username: utente ? utente.username : "Unknown",
-              punteggio: partecipazione.punteggio,
+              punteggio: partecipazione.punteggio || 0,
+              team_id: utente ? utente.team_id : null,
+              team_name: utente && utente.team_id 
+                ? teamsData.find(team => team.id === utente.team_id)?.name || "Unknown Team" 
+                : "No Team",
               ...roundScores,
             };
           }
         );
 
+        // Organizza i dati per i team
+        const teamMap = new Map();
+        
+        partecipantiConInfo.forEach(player => {
+          if (player.team_id) {
+            if (!teamMap.has(player.team_id)) {
+              teamMap.set(player.team_id, {
+                team_id: player.team_id,
+                team_name: player.team_name,
+                members: [],
+                punteggio: 0,
+                round_scores: {},
+              });
+              
+              // Inizializza i punteggi dei round per il team
+              if (torneo.rounds) {
+                for (let i = 1; i <= torneo.rounds; i++) {
+                  teamMap.get(player.team_id).round_scores[`round_${i}`] = 0;
+                }
+              }
+            }
+            
+            // Aggiungi il giocatore al team
+            teamMap.get(player.team_id).members.push(player.username);
+            
+            // Aggiorna il punteggio totale del team
+            teamMap.get(player.team_id).punteggio += player.punteggio;
+            
+            // Aggiorna i punteggi dei round per il team
+            if (torneo.rounds) {
+              for (let i = 1; i <= torneo.rounds; i++) {
+                teamMap.get(player.team_id).round_scores[`round_${i}`] += player[`round_${i}`] || 0;
+              }
+            }
+          }
+        });
+        
+        // Converti la Map in un array di team
+        const teamsData = Array.from(teamMap.values()).map(team => ({
+          team_name: team.team_name,
+          members: team.members,
+          punteggio: team.punteggio,
+          ...team.round_scores,
+        }));
+
         return {
           ...torneo,
           partecipanti: partecipantiConInfo,
+          teams: teamsData,
           roundCount: torneo.rounds || 0, // Usa il campo rounds dal torneo
         };
       });
 
-      setTornei(torneoConPartecipanti);
+      setTornei(torneoConDati);
     } catch (error) {
-      console.error("Errore nel recupero dei tornei o partecipazioni:", error);
+      console.error("Errore nel recupero dei dati:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Modifica le colonne della tabella per includere i round
+  // Colonne per la tabella dei giocatori
   const getPartecipantiColumns = (roundCount) => {
     const baseColumns = [
       {
@@ -121,7 +177,19 @@ const Home = () => {
         key: "username",
         render: (text) => <span style={{ color: "#d8b4fe" }}>{text}</span>,
         fixed: "left",
+        sorter: (a, b) => a.username.localeCompare(b.username),
       },
+      {
+        title: "Team",
+        dataIndex: "team_name",
+        key: "team_name",
+        render: (text) => (
+          <span style={{ color: "#a78bfa" }}>
+            <TeamOutlined style={{ marginRight: 5 }} />
+            {text}
+          </span>
+        ),
+      }
     ];
 
     // Aggiungi colonne per ogni round
@@ -133,13 +201,14 @@ const Home = () => {
         align: "center",
         render: (score) => (
           <Badge
-            count={score}
+            count={score || 0}
             style={{
               backgroundColor: score > 0 ? "#6a3093" : "#4c1d95",
               color: "#fff",
             }}
           />
         ),
+        sorter: (a, b) => (a[`round_${i}`] || 0) - (b[`round_${i}`] || 0),
       });
     }
 
@@ -150,6 +219,8 @@ const Home = () => {
       key: "punteggio",
       align: "center",
       fixed: "right",
+      sorter: (a, b) => (a.punteggio || 0) - (b.punteggio || 0),
+      defaultSortOrder: 'descend',
       render: (score) => (
         <span
           style={{
@@ -161,7 +232,78 @@ const Home = () => {
             boxShadow: "0 2px 8px rgba(122, 40, 206, 0.4)",
           }}
         >
-          {score}
+          {score || 0}
+        </span>
+      ),
+    });
+
+    return baseColumns;
+  };
+
+  // Colonne per la tabella dei team
+  const getTeamColumns = (roundCount) => {
+    const baseColumns = [
+      {
+        title: "Team",
+        dataIndex: "team_name",
+        key: "team_name",
+        render: (text) => <span style={{ color: "#d8b4fe" }}>{text}</span>,
+        fixed: "left",
+        sorter: (a, b) => a.team_name.localeCompare(b.team_name),
+      },
+      {
+        title: "Membri",
+        dataIndex: "members",
+        key: "members",
+        render: (members) => (
+          <span style={{ color: "#a78bfa" }}>
+            {members.join(", ")}
+          </span>
+        ),
+      }
+    ];
+
+    // Aggiungi colonne per ogni round
+    for (let i = 1; i <= roundCount; i++) {
+      baseColumns.push({
+        title: `Game ${i}`,
+        dataIndex: `round_${i}`,
+        key: `round_${i}`,
+        align: "center",
+        render: (score) => (
+          <Badge
+            count={score || 0}
+            style={{
+              backgroundColor: score > 0 ? "#6a3093" : "#4c1d95",
+              color: "#fff",
+            }}
+          />
+        ),
+        sorter: (a, b) => (a[`round_${i}`] || 0) - (b[`round_${i}`] || 0),
+      });
+    }
+
+    // Aggiungi colonna punteggio totale
+    baseColumns.push({
+      title: "Totale",
+      dataIndex: "punteggio",
+      key: "punteggio",
+      align: "center",
+      fixed: "right",
+      sorter: (a, b) => (a.punteggio || 0) - (b.punteggio || 0),
+      defaultSortOrder: 'descend',
+      render: (score) => (
+        <span
+          style={{
+            color: "#fff",
+            fontWeight: "bold",
+            background: "linear-gradient(135deg, #7e22ce 0%, #6a3093 100%)",
+            padding: "4px 12px",
+            borderRadius: "16px",
+            boxShadow: "0 2px 8px rgba(122, 40, 206, 0.4)",
+          }}
+        >
+          {score || 0}
         </span>
       ),
     });
@@ -178,45 +320,9 @@ const Home = () => {
     setVisible(false);
   };
 
-  const switchView = (checked) => {
-    setViewMode(checked ? "player" : "team");
+  const switchView = (mode) => {
+    setViewMode(mode);
   };
-
-  const columns = [
-    {
-      title: viewMode === "team" ? "Team" : "Giocatore",
-      dataIndex: viewMode === "team" ? "team" : "player",
-    },
-    {
-      title: "Posizione",
-      dataIndex: "position",
-    },
-    {
-      title: "Punteggio",
-      dataIndex: "punteggio",
-    },
-  ];
-
-  const data = currentTorneo
-    ? viewMode === "team"
-      ? currentTorneo.teamLeaderboard
-      : currentTorneo.playerLeaderboard
-    : [];
-
-  // Nuove colonne per la tabella dei partecipanti
-  const partecipantiColumns = [
-    {
-      title: "Giocatore",
-      dataIndex: "username",
-    },
-    {
-      title: "Punteggio",
-      dataIndex: "punteggio",
-    },
-  ];
-
-  // Dati della tabella dei partecipanti
-  const partecipantiData = currentTorneo ? currentTorneo.partecipanti : [];
 
   return (
     <div
@@ -465,32 +571,60 @@ const Home = () => {
 
           <Row gutter={[16, 16]} style={{ marginTop: 20, padding: "0 20px" }}>
             <Col span={24}>
-              <h2
+              <Tabs 
+                defaultActiveKey="players" 
+                onChange={switchView}
                 style={{
-                  color: "#d8b4fe",
-                  fontSize: 24,
+                  color: "#a78bfa",
+                }}
+                tabBarStyle={{
                   borderBottom: "2px solid #6a3093",
-                  paddingBottom: 8,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
+                  marginBottom: "20px",
                 }}
               >
-                <TrophyOutlined style={{ color: "#fbbf24" }} /> Classifica
-                Giocatori
-              </h2>
-              <Table
-                columns={getPartecipantiColumns(currentTorneo?.roundCount || 0)}
-                dataSource={currentTorneo?.partecipanti || []}
-                rowKey="username"
-                pagination={false}
-                style={{
-                  backgroundColor: "transparent",
-                }}
-                rowClassName={() => "gaming-table-row"}
-                scroll={{ x: true }}
-                bordered
-              />
+                <TabPane 
+                  tab={
+                    <span style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <TrophyOutlined style={{ color: "#fbbf24" }} /> Classifica Giocatori
+                    </span>
+                  } 
+                  key="player"
+                >
+                  <Table
+                    columns={getPartecipantiColumns(currentTorneo?.roundCount || 0)}
+                    dataSource={currentTorneo?.partecipanti || []}
+                    rowKey="username"
+                    pagination={{ pageSize: 10 }}
+                    style={{
+                      backgroundColor: "transparent",
+                    }}
+                    rowClassName={() => "gaming-table-row"}
+                    scroll={{ x: true }}
+                    bordered
+                  />
+                </TabPane>
+                <TabPane 
+                  tab={
+                    <span style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <TeamOutlined style={{ color: "#fbbf24" }} /> Classifica Teams
+                    </span>
+                  } 
+                  key="team"
+                >
+                  <Table
+                    columns={getTeamColumns(currentTorneo?.roundCount || 0)}
+                    dataSource={currentTorneo?.teams || []}
+                    rowKey="team_name"
+                    pagination={{ pageSize: 10 }}
+                    style={{
+                      backgroundColor: "transparent",
+                    }}
+                    rowClassName={() => "gaming-table-row"}
+                    scroll={{ x: true }}
+                    bordered
+                  />
+                </TabPane>
+              </Tabs>
             </Col>
           </Row>
 

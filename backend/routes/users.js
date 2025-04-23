@@ -373,10 +373,6 @@ router.post("/", async (req, res) => {
           username,
           email,
           punteggio: 0,
-          game1: 0,
-          game2: 0,
-          game3: 0,
-          game4: 0,
         }
       ])
       .select()

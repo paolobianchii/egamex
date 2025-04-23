@@ -65,10 +65,6 @@ function Teams() {
   const [teams, setTeams] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false); // Stato per la modale
   const apiUrl = import.meta.env.VITE_BACKEND_URL;
-  const [game1, setGame1] = useState(0);
-  const [game2, setGame2] = useState(0);
-  const [game3, setGame3] = useState(0);
-  const [game4, setGame4] = useState(0);
 
   const navigate = useNavigate();
 
@@ -112,13 +108,8 @@ function Teams() {
   
     const newTeam = {
       name: teamName,
-      num_participants: selectedUsers,
       score: teamScore,
       numParticipants: selectedUsers.length,
-      game1,
-      game2,
-      game3,
-      game4,
     };
   
     try {
@@ -165,48 +156,7 @@ function Teams() {
 
     },
     
-    {
-      title: "Partecipanti",
-      dataIndex: "num_participants",
-      key: "num_participants",
-    },
-    {
-      title: "Game1",
-      dataIndex: "game1",
-      key: "game1",
-      render: (text) => <span style={{ fontWeight: 500, fontSize: 16 }}>{text}</span>
-
-    },
-    {
-      title: "Game2",
-      dataIndex: "game2",
-      key: "game2",
-      render: (text) => <span style={{ fontWeight: 500, fontSize: 16 }}>{text}</span>
-
-    },
-    {
-      title: "Game3",
-      dataIndex: "game3",
-      key: "game3",
-      render: (text) => <span style={{ fontWeight: 500, fontSize: 16 }}>{text}</span>
-
-    },
-    {
-      title: "Game4",
-      dataIndex: "game4",
-      key: "game4",
-      render: (text) => <span style={{ fontWeight: 500, fontSize: 16 }}>{text}</span>
-
-    },
-    {
-      title: "Totale",
-      key: "punteggio",
-      render: (text, record) => (
-        <span style={{ fontWeight: 800, fontSize: 18, color:"violet" }}>
-          {(record.game1 || 0) + (record.game2 || 0) + (record.game3 || 0) + (record.game4 || 0)}
-        </span>
-      ),
-    },
+  
     {
       title: "Azioni",
       key: "actions",
@@ -298,18 +248,7 @@ function Teams() {
                   </Select>
                 </Form.Item>
 
-                <Form.Item label="Game1" required>
-            <Input type="number" value={game1} onChange={(e) => setGame1(Number(e.target.value))} placeholder="Punteggio Game 1" />
-          </Form.Item>
-          <Form.Item label="Game2" required>
-            <Input type="number" value={game2} onChange={(e) => setGame2(Number(e.target.value))} placeholder="Punteggio Game 2" />
-          </Form.Item>
-          <Form.Item label="Game3" required>
-            <Input type="number" value={game3} onChange={(e) => setGame3(Number(e.target.value))} placeholder="Punteggio Game 3" />
-          </Form.Item>
-          <Form.Item label="Game4" required>
-            <Input type="number" value={game4} onChange={(e) => setGame4(Number(e.target.value))} placeholder="Punteggio Game 4" />
-          </Form.Item>
+
 
                 <Form.Item>
                   <Button type="primary" htmlType="submit" block>

@@ -34,7 +34,6 @@ function TeamDetails() {
           <div style={{ backgroundColor: 'white', padding: 20, borderRadius: 8, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' }}>
             <Title level={2}>Dettagli Team: {team.name}</Title>
             <p><strong>Punteggio:</strong> {team.score}</p>
-            <p><strong>Numero di partecipanti:</strong> {team.num_participants}</p>
             <p><strong>Partecipanti:</strong></p>
             <ul>
               {team.participants.map((user) => (
